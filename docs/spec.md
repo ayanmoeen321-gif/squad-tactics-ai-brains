@@ -486,3 +486,8 @@ These were not decided in the interview.
 - Taunt ignores the overkill block on purpose: the forced attack is the point of the skill. The preview can therefore show more damage on the Tank than its HP.
 - The `taunted` flag is on the plan and on every event of that monster's turn (move, attack, fallback attack). The logger must record it, so the evaluation can count Taunt effects.
 - Extras list: the UI shows "affects N monsters" before the Taunt click, because skills cannot be undone.
+
+**Round loop (`engine/game.py`)**
+- Plans for a round are made as soon as the round starts, so the preview is ready at once.
+- Hero cooldowns tick down by 1 at the start of each round. A skill used in round 1 with cooldown 3 is ready again in round 4 (Healer, cooldown 2: round 3).
+- `end_turn` runs: player-phase end (lava on heroes), monster execution, then the next round. Calling it after the game is over is an error.
