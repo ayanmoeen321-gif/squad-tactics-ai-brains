@@ -1,0 +1,6 @@
+{
+  "goblin": {"name": "Goblin", "symbol": "g", "hp": 4,  "move": 4, "range": 1, "damage": 2, "los": false, "heal": null},
+  "brute":  {"name": "Brute",  "symbol": "b", "hp": 12, "move": 2, "range": 1, "damage": 3, "los": false, "heal": null},
+  "archer": {"name": "Archer", "symbol": "a", "hp": 5,  "move": 3, "range": 4, "damage": 3, "los": true,  "heal": null},
+  "healer": {"name": "Healer", "symbol": "h", "hp": 6,  "move": 3, "range": 3, "damage": 1, "los": true,  "heal": {"amount": 3, "range": 3}}
+}

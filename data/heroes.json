@@ -1,0 +1,14 @@
+{
+  "tank": {
+    "name": "Tank", "symbol": "1", "hp": 20, "move": 3, "range": 1, "damage": 4, "los": false,
+    "skill": {"name": "taunt", "cooldown": 3, "radius": 3}
+  },
+  "archer": {
+    "name": "Archer", "symbol": "2", "hp": 10, "move": 4, "range": 4, "damage": 4, "los": true,
+    "skill": {"name": "piercing_shot", "cooldown": 3, "damage": 4}
+  },
+  "healer": {
+    "name": "Healer", "symbol": "3", "hp": 12, "move": 3, "range": 3, "damage": 2, "los": true,
+    "skill": {"name": "heal", "cooldown": 2, "amount": 5, "range": 3}
+  }
+}
