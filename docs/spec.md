@@ -499,3 +499,14 @@ These were not decided in the interview.
 - Flank is reached mostly when Attack is blocked by the overkill block (a monster that can reach a flank tile normally also has an Attack option). Choice: the hero with the fewest earlier attack or flank plans, then hero order.
 - Deterministic. It is the teacher for Laya-A and Kev-A, so it is frozen before any training data is made. Any rule change after that needs a new `version` and new data.
 - Retreat stays in the option list for every monster, so the models may pick it; only the scripted brain ignores it for Goblins and Brutes.
+
+**Hero bots (`brains/hero_bots.py`)**
+- A bot plays all living heroes for one player phase through the public `PlayerPhase` methods, in the order Tank, Archer, Healer.
+- Errors are loud: if an action raises `ActionError`, the bot records it in `bot.errors` and the hero waits so the game can continue. Tests fail if any error is recorded. The evaluation runner must abort a run if `bot.errors` is not empty.
+- Each bot has its own RNG, seeded from "style:game seed". It is separate from the engine RNG and is used only to break ties between equal choices. Swapping which hero starts on which start tile is done by the runner, not by the bot.
+- Tank uses Taunt when the real Taunt rule, tried on a copy of the plans, would affect 2 or more monsters. Archer uses Piercing Shot when it hits 2 or more monsters. Healer heals the lowest-HP other hero below 60% HP within range, never herself.
+- Aggressive: moves to a tile from which it can hit the nearest monster, otherwise walks toward it.
+- Defensive: prefers a tile from which it can hit, then cover or a chokepoint, with the smallest move.
+- Focus-fire: one shared target per turn, the lowest-HP monster that at least one hero that has not acted can hit this turn (moving included). If none can be hit, the monster closest to the heroes. Heroes that cannot hit it move toward it. If the target dies mid-turn, a new one is picked by the same rule.
+- All bots avoid ending on lava when a safe tile exists.
+- Balance check: each bot's win rate against the scripted brain is checked in the build step 3 baseline runs and adjusted then if far off.
