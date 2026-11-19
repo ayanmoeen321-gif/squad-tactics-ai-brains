@@ -518,3 +518,8 @@ These were not decided in the interview.
 - Hero start tiles are shuffled only by the runner (`Game(..., hero_start_order=...)`), using its own RNG stream seeded from "start:" plus the game seed. The browser game never shuffles: the player always gets the map as designed. All evaluation results are therefore for shuffled starts. The baseline runs check win rates per start order, to catch a level that becomes unwinnable.
 - Teamwork rates count monster phases after execution: focus fire = one hero attacked by 2+ monsters; flanking = one hero attacked by melee monsters from 2+ sides; protecting = a protect plan whose monster ended on its planned tile. Normal, fallback and taunted attacks all count. Heroes' own attacks are not counted.
 - The summary also records taunt count, heroes alive, hero HP left, decision count, option position counts, model time and worst decision time.
+
+**Scripted brain experiment (Nov 2026, not adopted)**
+- Tested version 2: a Brute holds a chokepoint only if a hero is within walk distance 6, otherwise it advances. Result over 300 games per level: Level 2 stayed at 80.0% hero wins, Level 3 fell from 26.7% to 10.3%. Version 2 was dropped and version 1 stays the frozen teacher.
+- Conclusion: the doorway jam seen in one Level 3 game was not the main cause of Level 3's difficulty. The real cause is not found yet. Do not retry this fix.
+- Level difficulty is tuned through level data (monster counts, HP, damage), not by changing the teacher. A level where hero win rates sit well away from 0% and 100% separates brains best.
