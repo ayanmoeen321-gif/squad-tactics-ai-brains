@@ -69,8 +69,12 @@ def execute_round(state, plans):
         monster = state.units[plan["monster"]]
         if not monster.alive:
             continue
-        events += _move(state, monster, plan["dest"])
-        events += _act(state, monster, plan)
+        new = _move(state, monster, plan["dest"])
+        new += _act(state, monster, plan)
+        if plan.get("taunted"):
+            for event in new:
+                event["taunted"] = True
+        events += new
         result = outcome(state)
         if result:
             return events, result

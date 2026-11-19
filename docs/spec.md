@@ -478,3 +478,11 @@ These were not decided in the interview.
 - Moving to the tile the hero already stands on is not a move; the player just skips the move.
 - Undo puts the hero back on its start tile and allows a new move. It is not possible after any action.
 - End of the player phase: lava damage to heroes, then the win/lose check.
+
+**Taunt details**
+- Tie-break for the Taunt tile: fewest steps, then a cover tile wins, then lowest row, then lowest column.
+- Re-planning is one monster at a time, in plan order. A monster not yet re-planned keeps its old tile reserved, so there are never two monsters on one tile. Cost: an earlier monster cannot take the old tile of a later taunted monster.
+- A monster that cannot reach a hitting tile keeps its old plan and its old reservation.
+- Taunt ignores the overkill block on purpose: the forced attack is the point of the skill. The preview can therefore show more damage on the Tank than its HP.
+- The `taunted` flag is on the plan and on every event of that monster's turn (move, attack, fallback attack). The logger must record it, so the evaluation can count Taunt effects.
+- Extras list: the UI shows "affects N monsters" before the Taunt click, because skills cannot be undone.

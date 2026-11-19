@@ -1,5 +1,6 @@
-from engine.combat import ActionError, apply_lava, attack, heal, outcome, piercing_shot
+from engine.combat import ActionError, apply_lava, attack, heal, outcome, piercing_shot, skill_ready
 from engine.movement import reachable_tiles
+from engine.taunt import apply_taunt
 
 
 class PlayerPhase:
@@ -90,3 +91,14 @@ class PlayerPhase:
         """End of the player phase: lava on heroes, then win/lose check."""
         events = apply_lava(self.state, "hero")
         return events, outcome(self.state)
+
+    def taunt(self, hero_id):
+        hero = self._free_to_act(hero_id)
+        if not hero.skill or hero.skill["name"] != "taunt":
+            raise ActionError(f"{hero_id} cannot taunt")
+        if not skill_ready(hero):
+            raise ActionError("taunt is on cooldown")
+        affected = apply_taunt(self.state, hero, self.plans)
+        hero.cooldown = hero.skill["cooldown"]
+        self.status[hero_id]["acted"] = True
+        return [{"type": "taunt", "unit": hero_id, "affected": affected}]
