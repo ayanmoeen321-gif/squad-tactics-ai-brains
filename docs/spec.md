@@ -491,3 +491,11 @@ These were not decided in the interview.
 - Plans for a round are made as soon as the round starts, so the preview is ready at once.
 - Hero cooldowns tick down by 1 at the start of each round. A skill used in round 1 with cooldown 3 is ready again in round 4 (Healer, cooldown 2: round 3).
 - `end_turn` runs: player-phase end (lava on heroes), monster execution, then the next round. Calling it after the game is over is an error.
+
+**Scripted brain, version 1 (`brains/scripted_brain.py`)**
+- Priority: heal > retreat (Archers and Healers only) > attack > flank > hold chokepoint (Brutes only) > advance > first option.
+- Heal: lowest absolute HP first (not percent). Ties go to the monster that comes first in the map's reading order.
+- Attack choice, in order: a hero that earlier plans' damage plus this monster's damage would kill; then a hero earlier plans already attack; then lowest HP; then Tank, Archer, Healer order.
+- Flank is reached mostly when Attack is blocked by the overkill block (a monster that can reach a flank tile normally also has an Attack option). Choice: the hero with the fewest earlier attack or flank plans, then hero order.
+- Deterministic. It is the teacher for Laya-A and Kev-A, so it is frozen before any training data is made. Any rule change after that needs a new `version` and new data.
+- Retreat stays in the option list for every monster, so the models may pick it; only the scripted brain ignores it for Goblins and Brutes.
