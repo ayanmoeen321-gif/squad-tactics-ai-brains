@@ -510,3 +510,11 @@ These were not decided in the interview.
 - Focus-fire: one shared target per turn, the lowest-HP monster that at least one hero that has not acted can hit this turn (moving included). If none can be hit, the monster closest to the heroes. Heroes that cannot hit it move toward it. If the target dies mid-turn, a new one is picked by the same rule.
 - All bots avoid ending on lava when a safe tile exists.
 - Balance check: each bot's win rate against the scripted brain is checked in the build step 3 baseline runs and adjusted then if far off.
+
+**Headless runner and logging (`eval/runner.py`)**
+- `run_game(level, seed, brain, hero_bot, log_dir, swap_starts)` plays one full game and returns a summary. With `log_dir` it appends one JSON line per monster decision to `decisions.jsonl` and one summary line per game to `games.jsonl`.
+- Every line carries `schema_version` (1), `game_id`, `seed`, `level`, `brain`, `bot`, and `swap_order`; decision lines also carry `round`, `monster`, the option ids in the order they were presented, the chosen option, its position and the latency. The summary has `rounds` instead of `round`. State text, probabilities, tokens, retry and fallback fields are added in build step 4 as optional fields, so older logs stay valid.
+- The runner aborts (RunnerError) if a hero bot records an error, so a broken rule never turns into quiet "wait" moves in the results.
+- Hero start tiles are shuffled only by the runner (`Game(..., hero_start_order=...)`), using its own RNG stream seeded from "start:" plus the game seed. The browser game never shuffles: the player always gets the map as designed. All evaluation results are therefore for shuffled starts. The baseline runs check win rates per start order, to catch a level that becomes unwinnable.
+- Teamwork rates count monster phases after execution: focus fire = one hero attacked by 2+ monsters; flanking = one hero attacked by melee monsters from 2+ sides; protecting = a protect plan whose monster ended on its planned tile. Normal, fallback and taunted attacks all count. Heroes' own attacks are not counted.
+- The summary also records taunt count, heroes alive, hero HP left, decision count, option position counts, model time and worst decision time.
