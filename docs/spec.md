@@ -471,3 +471,10 @@ These were not decided in the interview.
 - If the path is blocked, the monster walks along its path and stops before the blocker, then uses the same fallback. Usual blockers: a hero standing on the path, or an earlier monster that was itself stopped short.
 - Execution stops at once when all heroes are dead. Monster lava damage is applied only at the very end, so it is skipped after an early loss.
 - Monsters can only die from lava, at the end of the phase. If lava kills the last monster, the result is a win.
+
+**Player phase (`engine/player.py`)**
+- A hero moves at most once, and only before it acts. After any action (including wait) it cannot move.
+- Heroes cannot enter a tile a monster stands on, or a tile reserved by a living monster's plan (as a destination or as a path). A reserved tile is free again if that monster dies.
+- Moving to the tile the hero already stands on is not a move; the player just skips the move.
+- Undo puts the hero back on its start tile and allows a new move. It is not possible after any action.
+- End of the player phase: lava damage to heroes, then the win/lose check.
