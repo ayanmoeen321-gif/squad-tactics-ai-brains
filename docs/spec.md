@@ -464,3 +464,10 @@ These were not decided in the interview.
 **Outcome**
 - If all heroes and all monsters die at the same time, it counts as a loss.
 - The timeout (round 30) is checked only at the end of a round.
+
+**Execution (`engine/execution.py`)**
+- Only attack and heal plans act after moving. Advance, flank, hold, protect and retreat only move.
+- A broken attack or heal (target dead, out of range, or ally already at full HP) falls back to the nearest hero in range, else nothing. The fallback never hits an ally.
+- If the path is blocked, the monster walks along its path and stops before the blocker, then uses the same fallback. Usual blockers: a hero standing on the path, or an earlier monster that was itself stopped short.
+- Execution stops at once when all heroes are dead. Monster lava damage is applied only at the very end, so it is skipped after an early loss.
+- Monsters can only die from lava, at the end of the phase. If lava kills the last monster, the result is a win.
