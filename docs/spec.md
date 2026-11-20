@@ -585,3 +585,15 @@ These were not decided in the interview.
 - Laya-A is judged only on held-out games (seeds 0 to 49) against random, scripted and an always-attack-if-available baseline. If results are poor, try `loss="soft-ce"` as a separate, recorded experiment.
 - `Agent.predict(state, questions)` returns `answers.<id>.choice`, `answers.<id>.probabilities`, and `usage.input_tokens` (also `state_tokens`, `truncated`).
 - `brains/laya_brain.py` `LayaBrain(agent, timeout=3.0)`: one option means no model call; error, timeout or invalid choice means one retry, then scripted fallback, logged via `last_info`. `brains/baseline_brains.py` `AlwaysAttackBrain`: hits the lowest-HP hero if an attack option exists, else scripted.
+
+**Laya-A held-out evaluation (build step 5, result)**
+- Run: `python -m eval.compare <run_e4> --seeds 50` on Colab (T4), seeds 0 to 49, levels 1 to 3, 3 hero bots, shuffled starts. 450 games per brain, same seeds, starts and bots for every brain. Total 740 s. Results and logs on Drive: `squad-laya/results/compare_full_run_e4*`.
+- Hero win rate (lower = better for monsters), 150 games per level, 95% Wilson interval:
+  - Level 1: random 100%, always_attack 100%, scripted 100%, Laya-A 100%.
+  - Level 2: random 99.3%, always_attack 84.7% [78.0, 89.6], scripted 80.7% [73.6, 86.2], Laya-A 81.3% [74.3, 86.8].
+  - Level 3: random 95.3%, always_attack 33.3% [26.3, 41.2], scripted 24.7% [18.5, 32.1], Laya-A 25.3% [19.0, 32.8].
+- Laya-A minus scripted: +0.7 pp on Levels 2 and 3 (noise). Minus always_attack: -3.3 pp (L2), -8.0 pp (L3); intervals overlap, so not a clear difference. Minus random: -18.0 pp (L2), -70.0 pp (L3).
+- Fallbacks: 0 for Laya-A. Speed on the T4: about 34 to 38 ms per decision (averaged over all decisions, single-option ones skip the model). Level 3 took 345 s for 150 games.
+- Reading: Laya-A imitates the scripted teacher (the expected best case) and clearly beats random. The scripted teacher itself is only slightly better than always-attack, so there is little for imitation to add. Level 1 separates no brain.
+- Limits: one training run, one checkpoint, one data size; hero bots only (no humans); the option-order check is not done yet; whether Laya-A generalizes beyond scripted-style situations is not tested. The `soft-ce` loss was not tried.
+- Next: Laya-B needs a lookahead teacher that beats scripted in dev tests; if it does not, report that.
