@@ -20,6 +20,12 @@ def make_brain(name, seed, laya_agent=None):
         return ScriptedBrain()
     if name == "always_attack":
         return AlwaysAttackBrain()
+    if name == "lookahead2":
+        from brains.lookahead2_brain import Lookahead2Brain
+        return Lookahead2Brain()
+    if name == "laya_b":
+        from brains.laya_brain import LayaBrain
+        return LayaBrain(laya_agent, name="laya_b", version="run_b_e4")
     if name == "lookahead":
         from brains.lookahead_brain import LookaheadBrain
         return LookaheadBrain()
@@ -86,40 +92,43 @@ def report(results, log_dir=None):
               f"[{100 * lo:4.1f},{100 * hi:5.1f}] {100 * fb / max(dec, 1):>8.1f}% "
               f"{ms:>7.2f} {wall:>7.1f}")
     names = {n for n, _ in results}
-    if "laya_a" in names:
-        print("\nLaya-A minus baseline, in percentage points of hero win rate "
+    model = next((n for n in ("laya_a", "laya_b") if n in names), None)
+    if model:
+        print("\nModel minus baseline, in percentage points of hero win rate "
               "(negative = Laya-A is better for the monsters):")
         for level in sorted({lv for _, lv in results}) + [None]:
-            w, n = rate(results, "laya_a", level)
+            w, n = rate(results, model, level)
             if n == 0:
                 continue
             parts = []
-            for base in ("always_attack", "scripted", "random"):
+            for base in ("always_attack", "scripted", "lookahead2", "random"):
                 bw, bn = rate(results, base, level)
                 if bn:
                     parts.append(f"vs {base} {100 * (w / n - bw / bn):+.1f} pp")
             print(f"  level {level if level else 'all'}: " + ", ".join(parts))
         if log_dir:
-            reasons = fallback_reasons(log_dir, "laya_a")
-            print("\nLaya-A fallbacks by reason:",
+            reasons = fallback_reasons(log_dir, model)
+            print(f"\n{model} fallbacks by reason:",
                   dict(reasons) if reasons else "none")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("checkpoint", nargs="?", help="Laya checkpoint folder (adds laya_a)")
+    ap.add_argument("checkpoint", nargs="?", help="Laya checkpoint folder (adds laya_a, or the brain named by --as)")
+    ap.add_argument("--as", dest="brain", default="laya_a", help="name for the checkpoint brain: laya_a or laya_b")
+    ap.add_argument("--brains", default="random,scripted,always_attack", help="comma list of non-model brains")
     ap.add_argument("--seeds", type=int, default=50)
     ap.add_argument("--levels", default="1,2,3")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--log-dir", default=None)
     a = ap.parse_args()
     log_dir = a.log_dir or time.strftime("logs/compare_%Y%m%d_%H%M%S")
-    names = ["random", "scripted", "always_attack"]
+    names = a.brains.split(",")
     agent = None
     if a.checkpoint:
         import laya
         agent = laya.load(a.checkpoint, device=a.device)
-        names.append("laya_a")
+        names.append(a.brain)
     levels = tuple(int(x) for x in a.levels.split(","))
     started = time.time()
     res = compare(names, agent, seeds=range(a.seeds), levels=levels, log_dir=log_dir)
