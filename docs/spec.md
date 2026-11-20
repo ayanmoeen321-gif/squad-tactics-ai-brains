@@ -541,3 +541,12 @@ These were not decided in the interview.
 - `engine/view.py`: `build_monster_view(state, monster, options, plans)` returns `state`, `question`, `options` (id and text, same order as the legal options) and `text` (STATE + QUESTION). `rough_tokens(text)` = characters / 3, a rough proxy only.
 - Plan lines list only allies that already planned. Option lines are short; attack lines carry "X also attacking" tags.
 - Token check (scripted brain, 45 whole games, 3 levels x 3 bots x 5 seeds): longest view L1 322, L2 305, L3 372 rough tokens, under the 400 cap. The margin is thin and the proxy is not Laya's tokenizer. Re-check with the real tokenizer in the Laya smoke test. If over, shorten wording first (for example plan-line HP), never drop plan lines.
+
+**Laya data format and smoke checks (build step 4, part 2)**
+- Laya 0.5.0 installs and imports on Python 3.14 (separate test venv `D:\laya-test-venv`, pulls in torch). No separate Python environment is needed for Laya; Kev still needs its own.
+- `laya.load()` with no argument now loads **vega**, a different default model. We do not use it. We start from the old checkpoints in the Hub repo `convaiinnovations/laya` (Apache 2.0): English (843 MB), `typed-decisions` (843 MB, 1024 context, tokenizer 3.6 MB), `multilingual` (644 MB).
+- The fine-tune function is `laya.train.finetune(data, model_dir, output_dir, config, device)` (not `laya.train.finetune` as a module). Data is JSONL, one row per decision: `{state, questions: {id: {type: "choice", instructions, criteria: {option_id: option_text}}}, expected: {id: option_id}}` (or `gold` with probabilities). `TrainConfig(shuffle_options=("choice",))` re-orders options each epoch and can help with position bias.
+- `eval/laya_export.py` `to_laya_row` builds that row from `build_monster_view`. Question id is `action`; the legend and question line go in `instructions`.
+- Real tokenizer check (typed-decisions tokenizer, scripted brain, 45 games per level): longest total 322 / 313 / 375 tokens (L1/L2/L3), longest state 233, longest single option 27. Margin to 400 is 25 tokens.
+- `items_from_rows(tok, rows, 1024, 256)` accepted all 133 Level 2 rows and all 1,670 Level 3 rows with nothing skipped.
+- Not yet tested: loading the model weights, training, inference speed, whether Laya learns. Next: tiny fine-tune smoke test (university GPU, or CPU for a few rows).
