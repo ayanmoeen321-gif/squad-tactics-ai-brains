@@ -562,3 +562,9 @@ These were not decided in the interview.
 - `run_game(..., log_text=True)` also writes `state_text` (the full STATE + QUESTION text) on each decision line. Off by default because it makes logs large.
 - The game summary has a new `fallbacks` count (decisions where `last_info["fallback"]` is true), for the 5% fair-test rule. Older logs without it stay valid.
 - Contract for model brains: set `self.last_info = {...}` on every `choose` call.
+
+**Laya-A training data (build step 5, part 1)**
+- `eval/make_laya_data.py`: `python -m eval.make_laya_data N [out]` plays scripted-brain v1 games and writes Laya rows (`{state, questions, expected}`) to `logs/laya_a_train.jsonl` (git-ignored) until at least N rows exist.
+- Training seeds start at 1000 (evaluation seeds are 0 to 49); the script refuses lower seeds. Each seed plays levels 1 to 3 against all 3 hero bots, with shuffled starts as in the evaluation. Equal shares by game, not by row.
+- First run: 10,013 rows from 261 games (seeds 1000 to 1028): L1 1,549, L2 3,402, L3 5,062 rows.
+- Same call gives the same rows (tested).
