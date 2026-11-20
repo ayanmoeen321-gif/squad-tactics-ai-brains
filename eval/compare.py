@@ -20,6 +20,9 @@ def make_brain(name, seed, laya_agent=None):
         return ScriptedBrain()
     if name == "always_attack":
         return AlwaysAttackBrain()
+    if name == "lookahead":
+        from brains.lookahead_brain import LookaheadBrain
+        return LookaheadBrain()
     if name == "laya_a":
         from brains.laya_brain import LayaBrain
         return LayaBrain(laya_agent, name="laya_a", version="run_e4")

@@ -597,3 +597,13 @@ These were not decided in the interview.
 - Reading: Laya-A imitates the scripted teacher (the expected best case) and clearly beats random. The scripted teacher itself is only slightly better than always-attack, so there is little for imitation to add. Level 1 separates no brain.
 - Limits: one training run, one checkpoint, one data size; hero bots only (no humans); the option-order check is not done yet; whether Laya-A generalizes beyond scripted-style situations is not tested. The `soft-ce` loss was not tried.
 - Next: Laya-B needs a lookahead teacher that beats scripted in dev tests; if it does not, report that.
+
+**Project rule: a failed target means keep improving**
+- A missed target is not a result to file away. When something does not work or misses its agreed target, we diagnose it and improve it through controlled experiments, one justified change at a time, until it works. Reporting a failure is only the record of the step, never the end of the work. The original result stays in the spec unchanged, and every later experiment is recorded separately.
+
+**Lookahead teacher, experiment 1 (build step 7)**
+- `brains/lookahead_brain.py` (`LookaheadBrain`, version "1"): for each option, copy the state, plan later monsters with scripted v1, play the monster phase with heroes standing still, score from the monster point of view. Score = hero HP lost + 6 per hero killed - 3 per monster HP lost - 2 per monster killed; a monster win is +inf and a hero win is -inf; ties go to the first option; one option means no rollout. A full Level 3 game takes about 0.7 s.
+- Pass line (fixed before running): scripted hero win rate minus lookahead hero win rate, Levels 2 and 3 pooled, same seeds, starts and bots, must be at least 8 points.
+- Result, seeds 0 to 19, 3 bots, 120 games per brain: scripted 76.7% (L2) and 26.7% (L3), pooled 51.7%; lookahead 80.0% (L2) and 10.0% (L3), pooled 45.0%. Difference +6.7 points: below the 8-point line by 1.3 points. At 120 games the interval is about plus or minus 9 points, so this run cannot separate 6.7 from 8.
+- Reading: lookahead is clearly better on Level 3 (-16.7 points) and not better on Level 2 (+3.3 points, noise). Hypotheses, not verified: heroes standing still in the simulation, the untested weights, the scripted-rollout assumption for later monsters.
+- Next: diagnose on dev seeds 100 and up (seeds 0 to 49 stay reserved for the final evaluation): win rates by level and hero bot, and the decisions where lookahead differs from scripted. Then one change at a time.
