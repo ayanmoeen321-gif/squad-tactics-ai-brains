@@ -550,3 +550,9 @@ These were not decided in the interview.
 - Real tokenizer check (typed-decisions tokenizer, scripted brain, 45 games per level): longest total 322 / 313 / 375 tokens (L1/L2/L3), longest state 233, longest single option 27. Margin to 400 is 25 tokens.
 - `items_from_rows(tok, rows, 1024, 256)` accepted all 133 Level 2 rows and all 1,670 Level 3 rows with nothing skipped.
 - Not yet tested: loading the model weights, training, inference speed, whether Laya learns. Next: tiny fine-tune smoke test (university GPU, or CPU for a few rows).
+
+**Laya CPU smoke test (build step 4)**
+- Tiny fine-tune on this laptop: 40 Level 2 rows (36 train, 4 calibration), 1 epoch, `freeze_encoder=True`, device cpu, `typed-decisions` checkpoint: finished in 245 seconds with no memory error. This shows the loop runs (load, train, calibrate, save). It does not show that Laya learns (loss 0.57, 1.45, 1.35, mean 1.30; 4 calibration items, temperature not fitted because 10 are needed).
+- Full fine-tuning (encoder not frozen) was not tried on CPU; it needs more RAM and goes to the university GPU.
+- Warning "Conflicting schema detected for question 'action' across rows" is harmless for training. It is raised after training when `finetune` writes `questions.json` next to the checkpoint and keeps the first row's question. Training items use each row's own options. Our client sends options with every call, so `questions.json` is not needed.
+- Local files, not committed: `D:\laya-test-venv` (venv + checkpoint, about 3 GB+), `sample_laya*.jsonl`, `tiny_laya.jsonl`.
