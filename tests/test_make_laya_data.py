@@ -29,3 +29,16 @@ def test_min_options_filter_removes_single_option_rows():
     assert len(rows) >= 60
     for row in rows:
         assert len(row["questions"]["action"]["criteria"]) >= 2
+
+def test_lookahead2_teacher_makes_valid_rows():
+    rows, _ = make_rows(30, min_options=2, teacher="lookahead2")
+    assert len(rows) >= 30
+    for row in rows:
+        crit = row["questions"]["action"]["criteria"]
+        assert len(crit) >= 2
+        assert row["expected"]["action"] in crit
+
+
+def test_unknown_teacher_is_refused():
+    with pytest.raises(ValueError):
+        make_rows(10, teacher="nope")

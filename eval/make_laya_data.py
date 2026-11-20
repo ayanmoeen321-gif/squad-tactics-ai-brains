@@ -12,9 +12,18 @@ TRAIN_SEED_START = 1000  # evaluation seeds are 0..49; training seeds never over
 MAX_LOOPS = 40
 
 
+def make_teacher(name):
+    if name == "scripted":
+        return ScriptedBrain()
+    if name == "lookahead2":
+        from brains.lookahead2_brain import Lookahead2Brain
+        return Lookahead2Brain()
+    raise ValueError(f"unknown teacher {name!r}")
+
+
 class _Rec:
-    def __init__(self):
-        self.inner = ScriptedBrain()
+    def __init__(self, teacher="scripted"):
+        self.inner = make_teacher(teacher)
         self.rows = []
 
     def choose(self, state, monster, options, plans):
@@ -23,8 +32,8 @@ class _Rec:
         return chosen
 
 
-def _play(level, seed, style):
-    rec = _Rec()
+def _play(level, seed, style, teacher="scripted"):
+    rec = _Rec(teacher)
     game = Game(level, seed, rec, hero_start_order=hero_start_order(seed))
     bot = make_bot(style, seed)
     loops = 0
@@ -39,7 +48,7 @@ def _play(level, seed, style):
     return rec.rows
 
 
-def make_rows(target, start_seed=TRAIN_SEED_START, min_options=1):
+def make_rows(target, start_seed=TRAIN_SEED_START, min_options=1, teacher="scripted"):
     """Scripted-brain decisions as Laya rows, until at least `target` rows exist.
     Returns (rows, stats). Order: for each seed, levels 1-3, bots in sorted order."""
     if start_seed < TRAIN_SEED_START:
@@ -49,7 +58,7 @@ def make_rows(target, start_seed=TRAIN_SEED_START, min_options=1):
     while len(rows) < target:
         for level in (1, 2, 3):
             for style in sorted(BOTS):
-                new = _play(level, seed, style)
+                new = _play(level, seed, style, teacher)
                 new = [r for r in new if len(r["questions"]["action"]["criteria"]) >= min_options]
                 rows += new
                 by_level[level] += len(new)
@@ -65,7 +74,8 @@ if __name__ == "__main__":
     out = Path(sys.argv[2] if len(sys.argv) > 2 else "logs/laya_a_train.jsonl")
     out.parent.mkdir(parents=True, exist_ok=True)
     min_options = int(sys.argv[sys.argv.index("--min-options") + 1]) if "--min-options" in sys.argv else 1
-    rows, stats = make_rows(target, min_options=min_options)
+    teacher = sys.argv[sys.argv.index("--teacher") + 1] if "--teacher" in sys.argv else "scripted"
+    rows, stats = make_rows(target, min_options=min_options, teacher=teacher)
     with open(out, "w", encoding="utf-8", newline="\n") as f:
         for r in rows:
             f.write(json.dumps(r) + "\n")

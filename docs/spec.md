@@ -614,3 +614,8 @@ These were not decided in the interview.
 - Result on fresh dev seeds 280 to 339 (Levels 2 and 3, 3 bots, 360 games per brain), hero win rate: scripted L2 76.7%, L3 29.4%, pooled 53.1%; lookahead 1 L2 88.9%, L3 11.7%, pooled 50.3% (+2.8 points); lookahead 2 L2 53.3%, L3 3.9%, pooled 28.6% (+24.4 points). The pass line (+8) is met.
 - Concern: Level 3 is now very hard for the heroes (3.9% hero wins against the bots). The goal is hard but beatable, so level data (monster counts, HP, damage) may need loosening later, checked with human playtests. The teacher is not changed for difficulty.
 - Next: generate Laya-B training data from lookahead 2 (seeds 1000 and up) and fine-tune on Colab.
+
+**Laya-B training data (build step 7, part 1)**
+- `eval/make_laya_data.py` has `--teacher scripted|lookahead2` (default scripted, so Laya-A data is unchanged). `make_rows(..., teacher=...)` refuses unknown teachers.
+- Laya-B data: `python -m eval.make_laya_data 8500 logs/laya_b_train.jsonl --min-options 2 --teacher lookahead2` gave 8,505 rows from 289 games (seeds 1000 to 1032): L1 1,654, L2 2,803, L3 4,048. Same size and filter as Laya-A, so the comparison is fair.
+- Drive plan: upload as `squad-laya/laya_b_train.jsonl`; train from the original `ckpt/typed-decisions` checkpoint (not from Laya-A) in 4 chunks of 1 epoch with the same settings, outputs `run_b_e1` ... `run_b_e4`.
