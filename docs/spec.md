@@ -523,3 +523,9 @@ These were not decided in the interview.
 - Tested version 2: a Brute holds a chokepoint only if a hero is within walk distance 6, otherwise it advances. Result over 300 games per level: Level 2 stayed at 80.0% hero wins, Level 3 fell from 26.7% to 10.3%. Version 2 was dropped and version 1 stays the frozen teacher.
 - Conclusion: the doorway jam seen in one Level 3 game was not the main cause of Level 3's difficulty. The real cause is not found yet. Do not retry this fix.
 - Level difficulty is tuned through level data (monster counts, HP, damage), not by changing the teacher. A level where hero win rates sit well away from 0% and 100% separates brains best.
+
+**Defensive bot stall rule (Nov 2026)**
+- Found with `eval.diagnose` and `eval.watch`: on Level 3 all 23 timeouts (scripted brain v1, 150 games) were the defensive bot. The last hero sat on a cover tile while the monsters held their doorway, so nobody moved until round 30.
+- Fix: `DefensiveBot` counts player phases in which no hero can hit any monster (`idle`). After `STALL_ROUNDS` (5, tunable) such phases in a row it walks toward the nearest monster like the aggressive bot. The counter resets as soon as a hit is possible.
+- Result (50 seeds x 3 bots per level): timeouts 23 -> 0. Level 3 hero wins stayed 37 of 150, so the stalled games now end as hero deaths. Levels 1 and 2 are unchanged.
+- Conclusion: Level 3 is hard because of attrition, not because of a stuck bot. The earlier baseline numbers for the defensive bot are out of date and must be re-run (`python -m eval.baseline 100`) before level tuning.

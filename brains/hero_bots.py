@@ -156,8 +156,24 @@ class AggressiveBot(HeroBot):
 
 class DefensiveBot(HeroBot):
     style = "defensive"
+    STALL_ROUNDS = 5
+
+    def __init__(self, seed=0):
+        super().__init__(seed)
+        self.idle = 0
+
+    def play(self, phase):
+        can_hit = any(self._targets_from(phase, h, t)
+                      for h in phase.state.heroes() for t in self._reach(phase, h))
+        self.idle = 0 if can_hit else self.idle + 1
+        return super().play(phase)
 
     def _move(self, phase, hero):
+        if self.idle >= self.STALL_ROUNDS:
+            target = self._nearest_monster(phase, hero)
+            if target is not None:
+                return self._approach(phase, hero, target)
+            return []
         grid = phase.state.grid
 
         def key(t):
