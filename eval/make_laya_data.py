@@ -39,7 +39,7 @@ def _play(level, seed, style):
     return rec.rows
 
 
-def make_rows(target, start_seed=TRAIN_SEED_START):
+def make_rows(target, start_seed=TRAIN_SEED_START, min_options=1):
     """Scripted-brain decisions as Laya rows, until at least `target` rows exist.
     Returns (rows, stats). Order: for each seed, levels 1-3, bots in sorted order."""
     if start_seed < TRAIN_SEED_START:
@@ -50,6 +50,7 @@ def make_rows(target, start_seed=TRAIN_SEED_START):
         for level in (1, 2, 3):
             for style in sorted(BOTS):
                 new = _play(level, seed, style)
+                new = [r for r in new if len(r["questions"]["action"]["criteria"]) >= min_options]
                 rows += new
                 by_level[level] += len(new)
                 games += 1
@@ -63,7 +64,8 @@ if __name__ == "__main__":
     target = int(sys.argv[1]) if len(sys.argv) > 1 else 10000
     out = Path(sys.argv[2] if len(sys.argv) > 2 else "logs/laya_a_train.jsonl")
     out.parent.mkdir(parents=True, exist_ok=True)
-    rows, stats = make_rows(target)
+    min_options = int(sys.argv[sys.argv.index("--min-options") + 1]) if "--min-options" in sys.argv else 1
+    rows, stats = make_rows(target, min_options=min_options)
     with open(out, "w", encoding="utf-8", newline="\n") as f:
         for r in rows:
             f.write(json.dumps(r) + "\n")

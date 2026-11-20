@@ -568,3 +568,10 @@ These were not decided in the interview.
 - Training seeds start at 1000 (evaluation seeds are 0 to 49); the script refuses lower seeds. Each seed plays levels 1 to 3 against all 3 hero bots, with shuffled starts as in the evaluation. Equal shares by game, not by row.
 - First run: 10,013 rows from 261 games (seeds 1000 to 1028): L1 1,549, L2 3,402, L3 5,062 rows.
 - Same call gives the same rows (tested).
+
+**Laya-A data filter and CPU plan (build step 5, part 2)**
+- `make_rows(..., min_options=1)` and `--min-options N` drop rows with fewer than N options. Rows with one option teach nothing (15% of the first 10,013-row set), so training data uses `--min-options 2`. At play time the brain should skip the model call when only one option exists.
+- Training set: `python -m eval.make_laya_data 8500 logs/laya_a_train.jsonl --min-options 2` gave 8,511 rows from 263 games (seeds 1000 to 1029): L1 1,382, L2 2,737, L3 4,392.
+- Label mix in the first (unfiltered) set: attack 43.2%, advance 28.6%, protect 8.9%, heal 8.2%, hold 8.0%, retreat 2.9%, flank 0.1% (13 rows). Flank is almost never chosen by the scripted teacher, so the models cannot learn it. This is a teacher limit and is stated in the report; examples are not added artificially.
+- Evaluation of Laya-A must be compared with an "always attack if available" baseline, not only with chance.
+- Decision (Ayan): no GPU access for about 4 days, so Laya-A is fine-tuned on the laptop CPU, with the full encoder (no `freeze_encoder`), no cost cuts. Risk: full fine-tuning RAM is estimated at about 7 GB (not measured) against a laptop with 8 GB or less. Test with a tiny run first. Kev steps wait for GPU access.
