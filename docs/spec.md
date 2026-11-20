@@ -556,3 +556,9 @@ These were not decided in the interview.
 - Full fine-tuning (encoder not frozen) was not tried on CPU; it needs more RAM and goes to the university GPU.
 - Warning "Conflicting schema detected for question 'action' across rows" is harmless for training. It is raised after training when `finetune` writes `questions.json` next to the checkpoint and keeps the first row's question. Training items use each row's own options. Our client sends options with every call, so `questions.json` is not needed.
 - Local files, not committed: `D:\laya-test-venv` (venv + checkpoint, about 3 GB+), `sample_laya*.jsonl`, `tiny_laya.jsonl`.
+
+**Runner log fields (build step 4, part 3)**
+- `LoggingBrain` copies optional fields from `brain.last_info` into each decision line: `probabilities`, `tokens`, `retry`, `fallback`, `fallback_reason`. It resets `last_info` before every call, so values never carry over. Scripted and random set nothing, so their lines are unchanged. Other keys in `last_info` are ignored.
+- `run_game(..., log_text=True)` also writes `state_text` (the full STATE + QUESTION text) on each decision line. Off by default because it makes logs large.
+- The game summary has a new `fallbacks` count (decisions where `last_info["fallback"]` is true), for the 5% fair-test rule. Older logs without it stay valid.
+- Contract for model brains: set `self.last_info = {...}` on every `choose` call.

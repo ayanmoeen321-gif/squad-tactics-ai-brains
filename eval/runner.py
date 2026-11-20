@@ -5,9 +5,11 @@ from pathlib import Path
 
 from brains.hero_bots import ORDER, make_bot
 from engine.game import Game
+from engine.view import build_monster_view
 
 SCHEMA_VERSION = 1
 MAX_LOOPS = 40
+LOG_FIELDS = ("probabilities", "tokens", "retry", "fallback", "fallback_reason")
 
 
 class RunnerError(RuntimeError):
@@ -25,10 +27,12 @@ class LoggingBrain:
     """Wraps a brain: times every decision and writes one log line for it.
     Later fields (state text, probabilities, fallback) are added only when they exist."""
 
-    def __init__(self, brain, context, sink=None):
+    def __init__(self, brain, context, sink=None, with_text=False):
         self.brain = brain
         self.context = context
         self.sink = sink
+        self.with_text = with_text
+        self.fallbacks = 0
         self.name = getattr(brain, "name", type(brain).__name__)
         self.calls = 0
         self.total_time = 0.0
@@ -37,6 +41,7 @@ class LoggingBrain:
 
     def choose(self, state, monster, options, plans):
         start = time.perf_counter()
+        self.brain.last_info = None  # a model brain sets it again on every call
         chosen = self.brain.choose(state, monster, options, plans)
         latency = time.perf_counter() - start
         ids = [o["id"] for o in options]  # in the order they were presented
@@ -45,10 +50,16 @@ class LoggingBrain:
         self.total_time += latency
         self.worst = max(self.worst, latency)
         self.positions[position] = self.positions.get(position, 0) + 1
+        info = getattr(self.brain, "last_info", None) or {}
+        extra = {k: info[k] for k in LOG_FIELDS if k in info}
+        if info.get("fallback"):
+            self.fallbacks += 1
+        if self.with_text and self.sink:
+            extra["state_text"] = build_monster_view(state, monster, options, plans)["text"]
         if self.sink:
             self.sink({**self.context, "round": state.round, "monster": monster.id,
                        "options": ids, "chosen": chosen, "position": position,
-                       "latency": round(latency, 6)})
+                       "latency": round(latency, 6), **extra})
         return chosen
 
 
@@ -80,7 +91,7 @@ def round_flags(state, events, plans):
     return focus, flank, protect
 
 
-def _play(level, seed, brain, hero_bot, swap_starts, decision_sink):
+def _play(level, seed, brain, hero_bot, swap_starts, decision_sink, log_text=False):
     started = time.perf_counter()
     brain_name = getattr(brain, "name", type(brain).__name__)
     game_id = f"{brain_name}-{hero_bot}-L{level}-S{seed}"
@@ -88,7 +99,7 @@ def _play(level, seed, brain, hero_bot, swap_starts, decision_sink):
     context = {"schema_version": SCHEMA_VERSION, "game_id": game_id, "seed": seed,
                "level": level, "brain": brain_name, "bot": hero_bot,
                "swap_order": list(order) if order else None}
-    wrapped = LoggingBrain(brain, context, decision_sink)
+    wrapped = LoggingBrain(brain, context, decision_sink, log_text)
     game = Game(level, seed, wrapped, hero_start_order=order)
     bot = make_bot(hero_bot, seed)
 
@@ -129,6 +140,7 @@ def _play(level, seed, brain, hero_bot, swap_starts, decision_sink):
         "protecting_rounds": protect_rounds,
         "taunt_count": taunts,
         "decisions": wrapped.calls,
+        "fallbacks": wrapped.fallbacks,
         "position_counts": wrapped.positions,
         "model_time": round(wrapped.total_time, 6),
         "worst_decision": round(wrapped.worst, 6),
@@ -136,7 +148,7 @@ def _play(level, seed, brain, hero_bot, swap_starts, decision_sink):
     }
 
 
-def run_game(level, seed, brain, hero_bot, log_dir=None, swap_starts=True):
+def run_game(level, seed, brain, hero_bot, log_dir=None, swap_starts=True, log_text=False):
     """Plays one full headless game. Returns the summary dict.
     With log_dir: appends decision lines and one summary line (JSON) there."""
     decisions = games = None
@@ -151,7 +163,7 @@ def run_game(level, seed, brain, hero_bot, log_dir=None, swap_starts=True):
             def sink(record):
                 decisions.write(json.dumps(record) + "\n")
 
-        summary = _play(level, seed, brain, hero_bot, swap_starts, sink)
+        summary = _play(level, seed, brain, hero_bot, swap_starts, sink, log_text)
         if games:
             games.write(json.dumps(summary) + "\n")
         return summary
