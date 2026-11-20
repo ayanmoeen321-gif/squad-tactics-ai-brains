@@ -536,3 +536,8 @@ These were not decided in the interview.
 - Level 3 by start order (scripted): the designed order (Tank, Archer, Healer) gives only 10.0% hero wins (n=60). Other orders give 14% to 56%. The browser always uses the designed order, so a human sees the hardest version.
 - Decision: do not tune Level 3 now. Evaluation balance (shuffled starts, bots) and human difficulty are related but not the same. Build the game first.
 - **Condition for build step 10 (playtest):** test Level 3 with the real browser start order before the blind playtest. If it is frustrating or unfair, adjust the level data then (monster counts, HP, damage), and re-run the evaluation numbers that depend on it.
+
+**State-to-text builder (build step 4, part 1)**
+- `engine/view.py`: `build_monster_view(state, monster, options, plans)` returns `state`, `question`, `options` (id and text, same order as the legal options) and `text` (STATE + QUESTION). `rough_tokens(text)` = characters / 3, a rough proxy only.
+- Plan lines list only allies that already planned. Option lines are short; attack lines carry "X also attacking" tags.
+- Token check (scripted brain, 45 whole games, 3 levels x 3 bots x 5 seeds): longest view L1 322, L2 305, L3 372 rough tokens, under the 400 cap. The margin is thin and the proxy is not Laya's tokenizer. Re-check with the real tokenizer in the Laya smoke test. If over, shorten wording first (for example plan-line HP), never drop plan lines.
