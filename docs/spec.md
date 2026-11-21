@@ -619,3 +619,24 @@ These were not decided in the interview.
 - `eval/make_laya_data.py` has `--teacher scripted|lookahead2` (default scripted, so Laya-A data is unchanged). `make_rows(..., teacher=...)` refuses unknown teachers.
 - Laya-B data: `python -m eval.make_laya_data 8500 logs/laya_b_train.jsonl --min-options 2 --teacher lookahead2` gave 8,505 rows from 289 games (seeds 1000 to 1032): L1 1,654, L2 2,803, L3 4,048. Same size and filter as Laya-A, so the comparison is fair.
 - Drive plan: upload as `squad-laya/laya_b_train.jsonl`; train from the original `ckpt/typed-decisions` checkpoint (not from Laya-A) in 4 chunks of 1 epoch with the same settings, outputs `run_b_e1` ... `run_b_e4`.
+
+**Laya-B first result and run C (soft-ce), build step 7**
+- Laya-B (default rlcd loss, lookahead2 data), held-out seeds 0 to 49, 150 games per level, hero win %: L2 85.3 [78.8, 90.1], L3 12.7 [8.3, 18.9]. Level 3 clearly better than scripted (24.7). Level 2 worse than scripted (80.7) and far from the teacher (57.3). Training loss rose over the chunks (0.68, 0.85, 1.03, 1.57); in-sample numbers are not evidence.
+- Run C: same data and settings, `loss="soft-ce"`, trained on Kaggle. Loss was steady (chunk 4: 0.47). Held-out: L2 85.3 [78.8, 90.1], L3 8.7 [5.1, 14.3]. Level 2 unchanged. Level 3 not shown better than Laya-B (intervals overlap). Checkpoint was not saved (download failed); only the numbers are kept.
+- Reading: the loss was not the cause of the Level 2 gap. The model could not see what the heroes can do next turn, which the teacher simulates.
+
+**State text change: heroes that can hit you here next turn (build step 7)**
+- `engine/view.py` `threats_at(state, tile)`: heroes that can reach a tile within their move and then hit the monster's current tile. Uses only positions and stats, never the player's choices. New state line: `Heroes that can hit you here next turn: Archer, Tank.` (or `none`).
+- Real tokenizer check (scripted games, 45 per level): longest text 323 / 313 / 375 before, 342 / 332 / 389 after (L1/L2/L3). Under 400, margin 11. Lookahead2 games were not measured. A per-option exposure tag does not fit in the budget.
+- This changes the text, so Laya-A, Laya-B and run C no longer match the current format. Their results stay valid for the old text.
+
+**Run D: new text + lookahead2 data (build step 7)**
+- Data: `logs/laya_c_train.jsonl`, 8,505 rows, same seeds (1000 to 1032), games and level split as the Laya-B data, all rows contain the new line. Training: soft-ce, same settings as run C, from the original checkpoint, 4 chunks (mean loss 0.58, 0.53, 0.48, 0.44). Run D was trained twice on Kaggle because a session restart wiped the first; the second run is the one evaluated.
+- Held-out (seeds 0 to 49, 150 games per level, hero win %): L2 **59.3** [51.3, 66.9], L3 **13.3** [8.8, 19.7]. Reference: scripted 80.7 / 24.7, lookahead2 57.3 / 3.3, Laya-B 85.3 / 12.7, run C 85.3 / 8.7. Zero fallbacks, about 27 to 33 ms per decision.
+- Reading: Level 2 is clearly better than scripted and Laya-B (intervals do not overlap) and within 2 points of the teacher. Level 3 is not shown better than Laya-B or run C (intervals overlap) and is 10 points from the teacher. One run, one seed set.
+- Run D is the baseline for later experiments and must not be overwritten. It is stored in a private Hugging Face repo (`squad-laya-run-d`, `model.safetensors` 842,609,220 bytes).
+- Next: more Level 3 data as a separate experiment (new files and run names `run_e_*`).
+
+**Project goals and free GPU notes**
+- One main goal is a real, playable, fun browser game that uses a System 1 model as the monsters' brain. Comparing brains is a way to pick the best one. The game should be hard but beatable. The brain must not break on a new map or monster (a Level 4 test is planned earlier).
+- Colab free GPU quota ran out after about 3 hours (2026-11-20). Kaggle (T4 x2, about 30 hours per week) is the second free GPU. Kaggle `/kaggle/working` is wiped when a session restarts, and file downloads from it can fail, so save checkpoints to a private Hugging Face repo right after training.
