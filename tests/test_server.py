@@ -69,3 +69,10 @@ def test_random_brain_can_be_chosen():
 def test_unknown_brain_is_400():
     r = client.post("/new", json={"level": 1, "seed": 0, "brain": "nope"})
     assert r.status_code == 400
+
+def test_state_has_attack_and_heal_lists():
+    s = _new()
+    for h in ("tank", "archer", "healer"):
+        assert isinstance(s["heroes"][h]["can_attack"], list)
+        assert isinstance(s["heroes"][h]["can_heal"], list)
+        assert isinstance(s["heroes"][h]["skill_ready"], bool)

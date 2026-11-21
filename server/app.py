@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 from brains.random_brain import RandomBrain
 from brains.scripted_brain import ScriptedBrain
-from engine.combat import ActionError
+from engine.combat import ActionError, in_attack_range, skill_ready
 from engine.game import Game
 
 app = FastAPI(title="Squad Tactics")
@@ -54,7 +54,9 @@ def _view(game):
     heroes = {}
     if phase is not None:
         for h in s.heroes():
-            heroes[h.id] = {"reachable": sorted([list(t) for t in phase.reachable(h.id)]),
+            can_attack = [m.id for m in s.monsters() if m.alive and in_attack_range(s, h, m)]
+            can_heal = [o.id for o in s.heroes() if h.skill and h.skill["name"] == "heal" and skill_ready(h) and o.id != h.id and o.alive and o.hp < o.max_hp and abs(o.pos[0] - h.pos[0]) + abs(o.pos[1] - h.pos[1]) <= h.range]
+            heroes[h.id] = {"can_attack": can_attack, "can_heal": can_heal, "skill_ready": skill_ready(h), "reachable": sorted([list(t) for t in phase.reachable(h.id)]),
                             "moved": phase.status[h.id]["moved"],
                             "acted": phase.status[h.id]["acted"]}
     return {"round": s.round, "result": game.result,
