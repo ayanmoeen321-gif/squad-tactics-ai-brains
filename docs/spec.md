@@ -640,3 +640,12 @@ These were not decided in the interview.
 **Project goals and free GPU notes**
 - One main goal is a real, playable, fun browser game that uses a System 1 model as the monsters' brain. Comparing brains is a way to pick the best one. The game should be hard but beatable. The brain must not break on a new map or monster (a Level 4 test is planned earlier).
 - Colab free GPU quota ran out after about 3 hours (2026-11-20). Kaggle (T4 x2, about 30 hours per week) is the second free GPU. Kaggle `/kaggle/working` is wiped when a session restarts, and file downloads from it can fail, so save checkpoints to a private Hugging Face repo right after training.
+
+**Run E: same as run D with double the data (build step 7)**
+- Data: `logs/laya_e_train.jsonl`, 17,007 rows from 581 lookahead2 games (seeds 1000 to 1064), all with the new text line: L1 3,288, L2 5,669, L3 8,050. Same settings as run D, 4 chunks (mean loss 0.45, 0.40, 0.36 for chunks 2 to 4). Stored in private Hugging Face repo `squad-laya-run-e`.
+- Held-out (seeds 0 to 49, 150 games per level, hero win %): L2 59.3 [51.3, 66.9], L3 12.0 [7.7, 18.2]. Run D: 59.3 and 13.3. Teacher: 57.3 and 3.3. Zero fallbacks, about 28 to 33 ms per decision.
+- Reading: doubling the data did not improve held-out play, although training loss kept falling. Level 3 stays about 9 points behind the teacher. One run, one seed set. Cause not found yet (untested ideas: missing information in the text on Level 3, specific situations where the model differs from the teacher, limits of imitating a simulation from text).
+
+**Decision: build the browser game now (build step 8)**
+- Run D is the current best candidate brain, not a final or optimal one. It stays frozen and must not be overwritten.
+- Level 3 diagnosis continues after a playable game exists, so the model can be judged in context. The project rule still applies: the Level 3 gap is open work, not accepted.
