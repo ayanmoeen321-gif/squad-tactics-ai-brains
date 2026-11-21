@@ -1,5 +1,5 @@
 from engine.combat import skill_ready
-from engine.movement import manhattan, walk_distances
+from engine.movement import has_line_of_sight, manhattan, walk_distances
 from engine.options import HERO_ORDER, _can_hit_from, _reachable
 from engine.state import MAX_ROUNDS
 
@@ -46,6 +46,26 @@ def _option_text(state, o, plans):
     return f"heal {ally.label} (HP {_hp(ally)})."
 
 
+def threats_at(state, tile):
+    """Heroes that could hit `tile` next turn (walk up to their move, then attack).
+    Uses only positions and stats, never the player's choices."""
+    names = []
+    for hid in HERO_ORDER:
+        h = state.units.get(hid)
+        if h is None or not h.alive:
+            continue
+        blocked = {u.pos for u in state.living() if u.id != h.id}
+        steps = walk_distances(state.grid, h.pos, blocked, max_steps=h.move)
+        for t in steps:
+            if t == tile or manhattan(t, tile) > h.range:
+                continue
+            if h.los and not has_line_of_sight(state.grid, t, tile):
+                continue
+            names.append(h.label)
+            break
+    return names
+
+
 def build_monster_view(state, monster, options, plans):
     """State + question text for one monster. Returns a dict with the parts."""
     walk = walk_distances(state.grid, monster.pos)
@@ -65,6 +85,8 @@ def build_monster_view(state, monster, options, plans):
             f"{'in reach' if in_reach else 'not in reach'}, "
             f"{'on cover' if state.grid.tile(*h.pos) == 'C' else 'no cover'}, "
             f"skill {'ready' if skill_ready(h) else 'not ready'}")
+    thr = threats_at(state, monster.pos)
+    lines.append("Heroes that can hit you here next turn: " + (", ".join(thr) if thr else "none") + ".")
     if plans:
         lines.append("Earlier plans this round:")
         for p in plans:

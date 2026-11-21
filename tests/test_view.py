@@ -1,6 +1,6 @@
 from brains.scripted_brain import ScriptedBrain
 from engine.game import Game
-from engine.view import build_monster_view, rough_tokens
+from engine.view import build_monster_view, rough_tokens, threats_at
 
 
 class Recorder:
@@ -45,3 +45,26 @@ def test_text_stays_under_token_budget_on_every_level():
     for level in (1, 2, 3):
         worst = max(rough_tokens(v["text"]) for v, _ in _record(level, rounds=10))
         assert worst < 400, (level, worst)
+
+def test_every_view_has_threat_line():
+    for level in (1, 2, 3):
+        for view, _ in _record(level):
+            assert "Heroes that can hit you here next turn:" in view["state"]
+
+
+def test_threats_at_finds_hero_next_to_tile():
+    state = Game(1, 0, ScriptedBrain()).state
+    tank = state.units["tank"]
+    near = [(tank.pos[0] + dr, tank.pos[1] + dc)
+            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+    near = [t for t in near if state.grid.is_walkable(*t)]
+    assert near
+    assert "Tank" in threats_at(state, near[0])
+
+
+def test_threats_at_does_not_change_state():
+    state = Game(2, 0, ScriptedBrain()).state
+    before = {uid: (u.pos, u.hp) for uid, u in state.units.items()}
+    threats_at(state, (5, 9))
+    after = {uid: (u.pos, u.hp) for uid, u in state.units.items()}
+    assert before == after
