@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from brains.random_brain import RandomBrain
 from brains.scripted_brain import ScriptedBrain
 from engine.combat import ActionError
 from engine.game import Game
@@ -12,6 +13,7 @@ G = {"game": None}
 class NewGame(BaseModel):
     level: int = 1
     seed: int = 0
+    brain: str = "scripted"
 
 
 class Move(BaseModel):
@@ -76,7 +78,13 @@ def _do(fn, *args):
 
 @app.post("/new")
 def new(body: NewGame):
-    G["game"] = Game(body.level, body.seed, ScriptedBrain())
+    if body.brain == "scripted":
+        brain = ScriptedBrain()
+    elif body.brain == "random":
+        brain = RandomBrain(body.seed)
+    else:
+        raise HTTPException(400, f"unknown brain {body.brain!r}")
+    G["game"] = Game(body.level, body.seed, brain)
     return _view(G["game"])
 
 

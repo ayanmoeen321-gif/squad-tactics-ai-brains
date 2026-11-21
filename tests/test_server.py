@@ -60,3 +60,12 @@ def test_no_game_is_400():
     import server.app as m
     m.G["game"] = None
     assert client.get("/state").status_code == 400
+
+def test_random_brain_can_be_chosen():
+    r = client.post("/new", json={"level": 1, "seed": 0, "brain": "random"})
+    assert r.status_code == 200
+
+
+def test_unknown_brain_is_400():
+    r = client.post("/new", json={"level": 1, "seed": 0, "brain": "nope"})
+    assert r.status_code == 400
