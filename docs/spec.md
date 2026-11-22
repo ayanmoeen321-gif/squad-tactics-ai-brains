@@ -649,3 +649,15 @@ These were not decided in the interview.
 **Decision: build the browser game now (build step 8)**
 - Run D is the current best candidate brain, not a final or optimal one. It stays frozen and must not be overwritten.
 - Level 3 diagnosis continues after a playable game exists, so the model can be judged in context. The project rule still applies: the Level 3 gap is open work, not accepted.
+
+**Browser game progress and decisions (build step 8)**
+- Server: `server/app.py` (FastAPI, one game at a time). Endpoints: new (level, seed, brain scripted or random), state, move, undo, attack, heal, wait, taunt, piercing_shot, end_turn. State includes grid, units, plans, and per hero: reachable tiles, can_attack, can_heal, skill_ready, moved, acted. Rules stay in Python.
+- Web: `web/` (Vite 8, Phaser 4). Vite forwards `/api` to the server on port 8000. Plain colored squares, click to move and attack, skill and End turn buttons, goal line, how-to-play text, turn log with [HERO] or [MONSTER] tags, plan arrows with arrowheads and red attack markers, HP numbers, hover info card.
+- Laya speed on the laptop CPU (Run D, 3 Level 3 games): load 18 s, about 4 to 5.5 s per decision. Too slow for live play under the 3 s timeout. On a T4 it is about 30 ms. Decision: the game ships with scripted as the default brain; Laya plays live only through a GPU server. The server picks the brain per game.
+- First playtest by the author: a new player does not know what to do or what the arrows mean. This is a game problem, not a player problem.
+- **Tutorial promoted from the cut list to Standard.** Plan: a guided Level 0 (tiny map, 1 or 2 weak monsters, steps highlight what to click, skippable) plus a Help button on every level with short tips for what is on screen. Based on a short literature check: learning by doing and context-sensitive hints beat text walls; a UW study found tutorials mattered little for simple games, but ours has skills and plans. Settings stays on the cut list.
+- Known small issues: Taunt on 0 monsters and Heal with +0 still use the skill (Healer button now checks for a hurt hero; Taunt not yet).
+
+**Requirement: a clean clone must run**
+- Anyone must be able to clone the public repo and run the game. Needed: README with exact steps, `requirements.txt`, `web/package.json` (exists), one start command (`python run.py`), scripted brain as the default, Laya and Kev optional, no secrets or personal paths in the repo.
+- Final check before calling the project done: clone into an empty folder, follow only the README, and confirm the game starts.
