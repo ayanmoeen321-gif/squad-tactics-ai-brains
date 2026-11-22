@@ -5,6 +5,7 @@ const CELL = 48
 const FLOOR = { '.': 0x2b2f3a, '#': 0x777777, 'C': 0x3d6b3d, 'L': 0xb5481f }
 const level = Number(new URLSearchParams(location.search).get('level') || 1)
 const seed = Number(new URLSearchParams(location.search).get('seed') || 0)
+const brain = new URLSearchParams(location.search).get('brain') || 'scripted'
 
 let S = null
 let selected = null
@@ -82,7 +83,8 @@ button('Skill', () => {
   else if (selected === 'healer') { mode = 'heal'; msg.textContent = 'Heal: click a hurt hero' }
 })
 button('End turn', () => { selected = null; act('/end_turn') })
-button('Restart', () => { selected = null; act('/new', { level, seed, brain: 'scripted' }) })
+button('Menu', () => { location.href = '/' })
+button('Restart', () => { selected = null; act('/new', { level, seed, brain }) })
 
 const card = document.createElement('div')
 card.style.cssText = 'color:#fff;font:14px sans-serif;padding:8px;min-height:84px;line-height:1.5;border-bottom:1px solid #333;margin-bottom:8px'
@@ -204,7 +206,7 @@ class Board extends Phaser.Scene {
     scene = this
     this.input.on('pointerdown', (p) => onClick(p.x, p.y))
     this.input.on('pointermove', (p) => onHover(p.x, p.y))
-    await act('/new', { level, seed, brain: 'scripted' })
+    await act('/new', { level, seed, brain })
   }
 }
 
