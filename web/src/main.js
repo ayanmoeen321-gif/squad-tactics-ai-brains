@@ -44,19 +44,20 @@ const logDiv = document.createElement('div')
 logDiv.style.cssText = 'color:#ccc;font:14px sans-serif;padding:8px;max-width:560px;line-height:1.5'
 
 function logEvents(events, path) {
+  const side = (id) => id === 'tank' || id === 'archer' || id === 'healer' ? '[HERO] ' : '[MONSTER] '
   const n = (id) => { const u = S.units.find((v) => v.id === id); return u ? u.label : id }
   if (path === '/end_turn') logLines.push('--- Monsters act ---')
   events.forEach((e) => {
     const tag = e.taunted ? ' (taunted)' : ''
     if (e.type === 'attack' || e.type === 'piercing_shot') {
       const what = e.type === 'attack' ? 'hit' : 'pierced'
-      logLines.push(n(e.attacker) + ' ' + what + ' ' + n(e.target) + ' for ' + e.damage + (e.killed ? ' - dead' : '') + tag)
+      logLines.push(side(e.attacker) + n(e.attacker) + ' ' + what + ' ' + n(e.target) + ' for ' + e.damage + (e.killed ? ' - dead' : '') + tag)
     } else if (e.type === 'heal') {
-      logLines.push(n(e.healer) + ' healed ' + n(e.target) + ' +' + e.restored)
+      logLines.push(side(e.healer) + n(e.healer) + ' healed ' + n(e.target) + ' +' + e.restored)
     } else if (e.type === 'lava') {
       logLines.push(n(e.target) + ' burned by lava for ' + e.damage + (e.killed ? ' - dead' : ''))
     } else if (e.type === 'taunt') {
-      logLines.push(n(e.unit) + ' used Taunt on ' + (e.affected ? e.affected.length : 0) + ' monster(s)')
+      logLines.push(side(e.unit) + n(e.unit) + ' used Taunt on ' + (e.affected ? e.affected.length : 0) + ' monster(s)')
     }
   })
   if (logLines.length > 40) logLines.splice(0, logLines.length - 40)
@@ -77,6 +78,7 @@ button('Skill', () => {
   if (!selected) return
   if (selected === 'tank') act('/taunt', { hero: 'tank' })
   else if (selected === 'archer') { mode = 'shot'; msg.textContent = 'Piercing Shot: click a direction' }
+  else if (selected === 'healer' && S.heroes.healer.can_heal.length === 0) { msg.textContent = 'No hurt hero in range to heal.' }
   else if (selected === 'healer') { mode = 'heal'; msg.textContent = 'Heal: click a hurt hero' }
 })
 button('End turn', () => { selected = null; act('/end_turn') })
@@ -160,7 +162,7 @@ function redraw() {
       g.fillStyle(color, 0.9)
       g.fillTriangle(b[0], b[1], hx(0.5), hy(0.5), hx(-0.5), hy(-0.5))
     }
-    if (p.kind === 'attack' && p.target && byId[p.target]) {
+    if (p.kind === 'attack' && p.target && byId[p.target] && byId[p.target].alive) {
       const t2 = mid(byId[p.target].pos)
       g.lineStyle(3, 0xff3333, 0.9)
       g.lineBetween(b[0], b[1], t2[0], t2[1])
