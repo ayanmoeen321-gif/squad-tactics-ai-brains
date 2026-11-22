@@ -735,3 +735,21 @@ These were not decided in the interview.
 - Buttons: Play again, Next level (only after a win on Levels 0 to 2), View board (hides the panel to look at the final position), Menu. The panel is placed over the canvas using its position on the page. It resets when a new game starts.
 - The server was not changed. The button row under the board now wraps (it ran into the side panel after the Arrows button was added). The tutorial win banner says "Press Next level".
 - Known: "Ended in round N" is capped at 30 because it was not checked whether the round counter advances when the game ends. Not tested on a window of a different size. Settings screen is still not built (first on the cut list).
+
+---
+
+## 22. Level 3 human playtest (author, 2026-11-22) and balance decision
+
+**What the author found (2 games on Level 3, designed start order, scripted brain)**
+- Game 1 (lost): felt very difficult. Only the Archer was useful: it could move to a safe tile and shoot from range. The Tank and Healer took damage every round, because there are many more monsters than heroes.
+- Game 2 (won in round 21): the Archer went to one doorway and sniped with Piercing Shot while the Tank and Healer stayed in a corner out of sight. The monsters split into two groups. The group at the other doorway held it and did not advance (scripted Brutes hold chokepoints), which gave the Archer time to clear one side, move down, get healed, and clear the other. The Tank got one assist. The Healer healed the Archer and stayed safe.
+- The author's reading: the win depended on half the monsters holding a doorway. A brain that advances would probably have won. So Level 3 is hard but beatable with a good plan, and the plan relies on the stall.
+- The author's balance idea: more Tank HP (the Tank is melee and must stand in front), and maybe Healer HP 12 to 14 or 15. Not tested.
+
+**Notes for later (not verified)**
+- The Tank can one-hit Goblins (4 damage vs 4 HP). Its problem is that it is melee and takes the hits.
+- Hero stats are global, so changing Tank or Healer HP also changes the Tutorial and Levels 1 and 2. Level 2 is already about 80% hero wins against scripted. The spec rule is to tune through level data (monster counts, HP, damage), which would only touch Level 3.
+- Win rates depend on the brain: smarter monster brains do not wait at doorways, so Level 3 would be harder for them.
+- Two games by the person who built the game are a small sample.
+
+**Decision (author): balancing is postponed to the end, after the rest of the project.** Even if the balance is not perfect, the project can be finished. At that time: test options with headless runs on dev seeds (340 and up, never 0 to 49), for example Tank HP 26 and Healer HP 15 on all levels, or two fewer monsters on Level 3. Any change to Level 3 data means re-running the evaluation numbers and probably retraining the Laya models on the new Level 3.
