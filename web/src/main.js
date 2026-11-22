@@ -157,10 +157,10 @@ function updateTut() {
   else if (!tutDone['/move']) t = "Step 2: white squares show where the Tank can move. Click one toward the red goblins."
   else if (!tutDone['/end_turn']) t = "Step 3: the colored lines are the goblins' plans. They act AFTER you press End turn. Click End turn now."
   else if (!tutDone['/attack']) t = "Step 4: the goblins came to you. Click a hero, then click a goblin with a yellow outline to attack it."
-  else if (!tutDone['/taunt'] && left >= 2) t = "Step 5: Taunt. Click the Tank, press Skill. Goblins near the Tank must attack it this turn. Then click End turn or use other heroes."
-  else if (!tutDone['/piercing_shot'] && left >= 2) t = "Step 6: Piercing Shot. Click the Archer, press Skill, then click in the direction of the goblins. It hits every monster in that line. Works best when goblins line up."
-  else if (!tutDone['/heal'] && left >= 2 && hurt) t = "Step 7: a hero is hurt. Click the Healer, press Skill, then click the hurt hero to heal 5 HP."
-  else if (left >= 2) t = "Tips: orange squares are lava (3 damage if you end your turn on one). Green squares are cover (ranged hits do 1 less). Now defeat the goblins."
+  else if (!tutDone['/taunt'] && left >= 1) t = "Step 5: Taunt. Click the Tank, press Skill. Goblins near the Tank must attack it this turn. Then click End turn or use other heroes."
+  else if (!tutDone['/piercing_shot'] && left >= 1) t = "Step 6: Piercing Shot. Click the Archer, press Skill, then click in the direction of the goblins. It hits every monster in that line. Works best when goblins line up."
+  else if (!tutDone['/heal'] && left >= 1 && hurt) t = "Step 7: a hero is hurt. Click the Healer, press Skill, then click the hurt hero to heal 5 HP."
+  else if (left >= 1) t = "Tips: orange squares are lava (3 damage if you end your turn on one). Green squares are cover (ranged hits do 1 less). Now defeat the goblins."
   else t = "Almost done. Finish the last goblin."
   tutDiv.textContent = t
 }
