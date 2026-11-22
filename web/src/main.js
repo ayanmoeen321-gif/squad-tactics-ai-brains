@@ -30,13 +30,37 @@ async function api(path, body) {
 async function act(path, body) {
   try {
     const j = await api(path, body)
-    S = j.state || j
+    S = j.state || j; if (path === '/new') { logLines.length = 0; logDiv.innerHTML = '' }; if (j.events) logEvents(j.events, path)
     msg.textContent = ''
   } catch (e) {
     msg.textContent = e.message
   }
   mode = null
   redraw()
+}
+
+const logLines = []
+const logDiv = document.createElement('div')
+logDiv.style.cssText = 'color:#ccc;font:14px sans-serif;padding:8px;max-width:560px;line-height:1.5'
+
+function logEvents(events, path) {
+  const n = (id) => { const u = S.units.find((v) => v.id === id); return u ? u.label : id }
+  if (path === '/end_turn') logLines.push('--- Monsters act ---')
+  events.forEach((e) => {
+    const tag = e.taunted ? ' (taunted)' : ''
+    if (e.type === 'attack' || e.type === 'piercing_shot') {
+      const what = e.type === 'attack' ? 'hit' : 'pierced'
+      logLines.push(n(e.attacker) + ' ' + what + ' ' + n(e.target) + ' for ' + e.damage + (e.killed ? ' - dead' : '') + tag)
+    } else if (e.type === 'heal') {
+      logLines.push(n(e.healer) + ' healed ' + n(e.target) + ' +' + e.restored)
+    } else if (e.type === 'lava') {
+      logLines.push(n(e.target) + ' burned by lava for ' + e.damage + (e.killed ? ' - dead' : ''))
+    } else if (e.type === 'taunt') {
+      logLines.push(n(e.unit) + ' used Taunt on ' + (e.affected ? e.affected.length : 0) + ' monster(s)')
+    }
+  })
+  if (logLines.length > 40) logLines.splice(0, logLines.length - 40)
+  logDiv.innerHTML = '<b>Log (newest first):</b><br>' + logLines.slice(-14).reverse().join('<br>')
 }
 
 function button(label, fn) {
@@ -174,4 +198,9 @@ help.innerHTML =
 
 document.body.appendChild(msg)
 document.body.appendChild(bar)
-document.body.appendChild(help)
+
+const side = document.createElement('div')
+side.style.cssText = 'position:absolute;left:600px;top:50px;width:520px'
+side.appendChild(logDiv)
+side.appendChild(help)
+document.body.appendChild(side)
