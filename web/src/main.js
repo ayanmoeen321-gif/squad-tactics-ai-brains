@@ -132,8 +132,22 @@ function redraw() {
     const a = mid(byId[p.monster].pos)
     const b = mid(p.dest)
     const color = Phaser.Display.Color.HSVToRGB((i * 0.17) % 1, 0.8, 1).color
-    g.lineStyle(3, color, 0.6)
-    g.lineBetween(a[0], a[1], b[0], b[1])
+    g.lineStyle(3, color, 0.7)
+    if (a[0] !== b[0] || a[1] !== b[1]) {
+      g.lineBetween(a[0], a[1], b[0], b[1])
+      const ang = Math.atan2(b[1] - a[1], b[0] - a[0])
+      const hx = (k) => b[0] - 12 * Math.cos(ang + k)
+      const hy = (k) => b[1] - 12 * Math.sin(ang + k)
+      g.fillStyle(color, 0.9)
+      g.fillTriangle(b[0], b[1], hx(0.5), hy(0.5), hx(-0.5), hy(-0.5))
+    }
+    if (p.kind === 'attack' && p.target && byId[p.target]) {
+      const t2 = mid(byId[p.target].pos)
+      g.lineStyle(3, 0xff3333, 0.9)
+      g.lineBetween(b[0], b[1], t2[0], t2[1])
+      g.lineBetween(t2[0] - 8, t2[1] - 8, t2[0] + 8, t2[1] + 8)
+      g.lineBetween(t2[0] - 8, t2[1] + 8, t2[0] + 8, t2[1] - 8)
+    }
   })
   const info = selected ? S.heroes[selected] : null
   if (info) {
