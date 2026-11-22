@@ -688,3 +688,21 @@ These were not decided in the interview.
 - `python run.py`: the game started, and the Tutorial was played through to a win in the browser.
 - The test folder was deleted afterwards.
 - Small issues seen: the log lines do not show the round number.
+
+---
+
+## 19. Taunt refusal, Help button, arrows (build step 8, part 3)
+
+**Taunt refusal (`engine/player.py`)**
+- Taunt now raises `ActionError` when `apply_taunt` affects no monster. The cooldown is not set and the Tank has not acted, so the player can still use the Tank. The browser shows the message under the board.
+- Two old tests in `tests/test_taunt.py` expected `affected == []` and now expect the error. New test: `tests/test_taunt_refused.py`. Tests: 308 passed.
+- Heal with +0 is still allowed by the engine (only the Healer button checks).
+
+**Help button (`web/src/main.js`)**
+- A Help button toggles a tips box at the top of the side panel. With nothing selected it shows the basics. With a hero selected it shows tips for that hero. It updates on every redraw, so clicking another hero changes the tips.
+
+**Arrows**
+- Found by the author: nothing in the game explained the arrows. Fixed in the Help box, Tutorial step 3 and the "How to play" text.
+- Meaning: a colored arrow is one monster moving from where it stands to where it will walk (the arrowhead is its destination). The color only tells monsters apart. A thick red line from the destination to the target means it will attack that target. No arrow means it stays.
+- Bug fixed: the first monster's arrow was red, the same color as the attack line. Monster colors now start at hue 0.1 and skip red; the attack line is thicker (5 px) and pure red.
+- Known: the X on the attack line is hidden under the target square, so the text says "thick red line", not "line with an X". Arrow readability on Level 3 is still to be checked.

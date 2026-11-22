@@ -269,8 +269,8 @@ help.innerHTML =
   '<b>How to play:</b> 1) Click a hero. 2) Click a white tile to move. ' +
   '3) Click a monster with a yellow outline to attack it (or use Skill). ' +
   '4) Press End turn.<br>' +
-  '<b>Colored lines:</b> each one is a monster\'s plan for this round, from where it ' +
-  'stands to where it will go. The monsters act AFTER you press End turn, so use your ' +
+  '<b>Arrows:</b> each colored arrow is one monster moving, from where it ' +
+  'stands to where it will walk. A thick red line means it will attack that target. The monsters act AFTER you press End turn, so use your ' +
   'turn to block, kill or avoid them.<br>' +
   '<b>Skills:</b> Tank = Taunt (nearby monsters attack the Tank). Archer = Piercing Shot ' +
   '(hits a whole line). Healer = Heal (+5 HP to another hero).'
