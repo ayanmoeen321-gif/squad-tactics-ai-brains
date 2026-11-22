@@ -82,6 +82,25 @@ button('Skill', () => {
 button('End turn', () => { selected = null; act('/end_turn') })
 button('Restart', () => { selected = null; act('/new', { level, seed, brain: 'scripted' }) })
 
+const card = document.createElement('div')
+card.style.cssText = 'color:#fff;font:14px sans-serif;padding:8px;min-height:84px;line-height:1.5;border-bottom:1px solid #333;margin-bottom:8px'
+card.textContent = 'Hover a unit to see its stats.'
+
+function onHover(x, y) {
+  if (!S) return
+  const u = unitAt(Math.floor(y / CELL), Math.floor(x / CELL))
+  if (!u) { card.textContent = 'Hover a unit to see its stats.'; return }
+  const lines = ['<b>' + u.label + '</b> (' + u.side + ')',
+    'HP ' + u.hp + '/' + u.max_hp + ' | Move ' + u.move + ' | Range ' + u.range + ' | Damage ' + u.damage]
+  if (u.skill) lines.push('Skill: ' + u.skill + (u.cooldown > 0 ? ' (ready in ' + u.cooldown + ' rounds)' : ' (ready)'))
+  const p = S.plans.find((q) => q.monster === u.id)
+  if (p) {
+    const tg = p.target ? S.units.find((v) => v.id === p.target) : null
+    lines.push('Plan: ' + p.kind + (tg ? ' ' + tg.label : ''))
+  }
+  card.innerHTML = lines.join('<br>')
+}
+
 function unitAt(r, c) {
   return S.units.find((u) => u.alive && u.pos[0] === r && u.pos[1] === c)
 }
@@ -161,6 +180,7 @@ function redraw() {
     scene.add.rectangle(x, y, CELL - 10, CELL - 10, color).setAlpha(acted ? 0.45 : 1)
     scene.add.text(x, y - 4, u.label[0], { fontSize: '20px', color: '#fff' }).setOrigin(0.5)
     scene.add.rectangle(x, y + 16, Math.max(1, (CELL - 12) * (u.hp / u.max_hp)), 4, 0x55ff55)
+    scene.add.text(x + 14, y + 8, String(u.hp), { fontSize: '11px', color: '#fff', backgroundColor: '#000a' }).setOrigin(0.5)
     if (info && u.side === 'monster' && info.can_attack.includes(u.id)) {
       g.lineStyle(3, 0xffff00, 1)
       g.strokeRect(x - CELL / 2 + 3, y - CELL / 2 + 3, CELL - 6, CELL - 6)
@@ -181,6 +201,7 @@ class Board extends Phaser.Scene {
   async create() {
     scene = this
     this.input.on('pointerdown', (p) => onClick(p.x, p.y))
+    this.input.on('pointermove', (p) => onHover(p.x, p.y))
     await act('/new', { level, seed, brain: 'scripted' })
   }
 }
@@ -215,6 +236,7 @@ document.body.appendChild(bar)
 
 const side = document.createElement('div')
 side.style.cssText = 'position:absolute;left:600px;top:50px;width:520px'
+side.appendChild(card)
 side.appendChild(logDiv)
 side.appendChild(help)
 document.body.appendChild(side)
