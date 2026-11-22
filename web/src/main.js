@@ -157,7 +157,8 @@ function onHover(x, y) {
   const p = S.plans.find((q) => q.monster === u.id)
   if (p) {
     const tg = p.target ? S.units.find((v) => v.id === p.target) : null
-    lines.push('Plan: ' + p.kind + (tg ? ' ' + tg.label : ''))
+    const stay = p.dest[0] === u.pos[0] && p.dest[1] === u.pos[1]
+    lines.push('Plan: ' + p.kind + (tg ? ' ' + tg.label : '') + (stay ? ' (stays where it is)' : ' (moves to the marked square)'))
   }
   card.innerHTML = lines.join('<br>')
 }
