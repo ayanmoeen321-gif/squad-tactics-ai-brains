@@ -40,6 +40,8 @@ async function act(path, body) {
   redraw()
 }
 
+let hoverId = null
+let showArrows = false
 const logLines = []
 const logDiv = document.createElement('div')
 logDiv.style.cssText = 'color:#ccc;font:14px sans-serif;padding:8px;max-width:560px;line-height:1.5'
@@ -86,6 +88,7 @@ button('Skill', () => {
 button('End turn', () => { selected = null; act('/end_turn') })
 button('Menu', () => { location.href = '/' })
 button('Restart', () => { selected = null; act('/new', { level, seed, brain }) })
+button('Arrows', () => { showArrows = !showArrows; redraw() })
 button('Help', () => {
   if (tipsDiv.style.display === 'block') { tipsDiv.style.display = 'none'; return }
   const tips = {
@@ -93,7 +96,7 @@ button('Help', () => {
     archer: '<b>Archer:</b> hits from 4 tiles away, needs a clear line. Skill = Piercing Shot: hits every monster in a straight line. Weak (10 HP), so keep it behind the Tank.',
     healer: '<b>Healer:</b> weak attack. Skill = Heal: +5 HP to another hero within 3 tiles. Cannot heal herself.',
   }
-  const basics = '<b>Tips:</b> Each hero moves once, then acts once. Each colored arrow is one monster moving: from where it stands to where it will walk. A thick red line means it will attack that target. No arrow means it stays. All act after End turn, so block, kill or dodge them. Green = cover (ranged hits do 1 less). Orange = lava (3 damage if you end there). Click a hero to get tips for it.'
+  const basics = '<b>Tips:</b> Each hero moves once, then acts once. A red number on a hero is the damage planned against it. Red-outlined monsters will attack. A faint square is where a monster will walk. Hover a monster, or press Arrows, to see its arrow. All act after End turn, so block, kill or dodge them. Green = cover (ranged hits do 1 less). Orange = lava (3 damage if you end there). Click a hero to get tips for it.'
   window.refreshTips = () => { tipsDiv.innerHTML = (selected && tips[selected]) ? tips[selected] : basics }; window.refreshTips()
   tipsDiv.style.display = 'block'
 })
@@ -105,6 +108,8 @@ card.textContent = 'Hover a unit to see its stats.'
 function onHover(x, y) {
   if (!S) return
   const u = unitAt(Math.floor(y / CELL), Math.floor(x / CELL))
+  const hid = u && u.side === 'monster' ? u.id : null
+  if (hid !== hoverId) { hoverId = hid; redraw() }
   if (!u) { card.textContent = 'Hover a unit to see its stats.'; return }
   const lines = ['<b>' + u.label + '</b> (' + u.side + ')',
     'HP ' + u.hp + '/' + u.max_hp + ' | Move ' + u.move + ' | Range ' + u.range + ' | Damage ' + u.damage]
@@ -170,7 +175,7 @@ function updateTut() {
   else if (S.result) t = "You lost, and that is fine. Press Restart and try again."
   else if (!tutDone['/move'] && !selected) t = "Step 1: click your Tank (the blue T)."
   else if (!tutDone['/move']) t = "Step 2: white squares show where the Tank can move. Click one toward the red goblins."
-  else if (!tutDone['/end_turn']) t = "Step 3: each colored arrow shows where one goblin will walk (the arrowhead is its destination). A thick red line means it will hit that hero. They act AFTER you press End turn. Click End turn now."
+  else if (!tutDone['/end_turn']) t = "Step 3: a red number on a hero is the damage the goblins plan to do to it. A red outline marks a goblin that will attack. Faint squares show where goblins will walk; hover a goblin or press Arrows to see its arrow. They act AFTER you press End turn. Click End turn now."
   else if (!tutDone['/attack']) t = "Step 4: the goblins came to you. Click a hero, then click a goblin with a yellow outline to attack it."
   else if (!tutDone['/taunt'] && left >= 1) t = "Step 5: Taunt. Click the Tank, press Skill. Goblins near the Tank must attack it this turn. Then click End turn or use other heroes."
   else if (!tutDone['/piercing_shot'] && left >= 1) t = "Step 6: Piercing Shot. Click the Archer, press Skill, then click in the direction of the goblins. It hits every monster in that line. Works best when goblins line up."
@@ -191,11 +196,16 @@ function redraw() {
   })
   const g = scene.add.graphics()
   const byId = Object.fromEntries(S.units.map((u) => [u.id, u]))
+  const attackerIds = new Set()
+  Object.values(S.heroes).forEach((hh) => (hh.attackers || []).forEach((id) => attackerIds.add(id)))
   S.plans.forEach((p, i) => {
     if (!byId[p.monster].alive) return
     const a = mid(byId[p.monster].pos)
     const b = mid(p.dest)
     const color = Phaser.Display.Color.HSVToRGB(0.1 + ((i * 0.17) % 0.75), 0.8, 1).color
+    if (a[0] !== b[0] || a[1] !== b[1]) { g.fillStyle(color, 0.35); g.fillRect(p.dest[1] * CELL + 5, p.dest[0] * CELL + 5, CELL - 10, CELL - 10); g.lineStyle(3, color, 1); g.strokeRect(p.dest[1] * CELL + 5, p.dest[0] * CELL + 5, CELL - 10, CELL - 10); g.strokeRect(byId[p.monster].pos[1] * CELL + 3, byId[p.monster].pos[0] * CELL + 3, CELL - 6, CELL - 6) }
+    if (attackerIds.has(p.monster)) { const mp = byId[p.monster].pos; g.lineStyle(3, 0xff0000, 1); g.strokeRect(mp[1] * CELL + 2, mp[0] * CELL + 2, CELL - 4, CELL - 4) }
+    if (!showArrows && hoverId !== p.monster) return
     g.lineStyle(3, color, 0.7)
     if (a[0] !== b[0] || a[1] !== b[1]) {
       g.lineBetween(a[0], a[1], b[0], b[1])
@@ -225,6 +235,11 @@ function redraw() {
     scene.add.rectangle(x, y, CELL - 10, CELL - 10, color).setAlpha(acted ? 0.45 : 1)
     scene.add.text(x, y - 4, u.label[0], { fontSize: '20px', color: '#fff' }).setOrigin(0.5)
     scene.add.rectangle(x, y + 16, Math.max(1, (CELL - 12) * (u.hp / u.max_hp)), 4, 0x55ff55)
+    const inc = u.side === 'hero' && S.heroes[u.id] ? S.heroes[u.id].incoming : 0
+    if (inc > 0) {
+      scene.add.rectangle(x - 13, y - 14, 18, 13, 0xaa0000)
+      scene.add.text(x - 13, y - 14, '-' + inc, { fontSize: '11px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5)
+    }
     scene.add.text(x + 14, y + 8, String(u.hp), { fontSize: '11px', color: '#fff', backgroundColor: '#000a' }).setOrigin(0.5)
     if (info && u.side === 'monster' && info.can_attack.includes(u.id)) {
       g.lineStyle(3, 0xffff00, 1)
@@ -270,8 +285,8 @@ help.innerHTML =
   '<b>How to play:</b> 1) Click a hero. 2) Click a white tile to move. ' +
   '3) Click a monster with a yellow outline to attack it (or use Skill). ' +
   '4) Press End turn.<br>' +
-  '<b>Arrows:</b> each colored arrow is one monster moving, from where it ' +
-  'stands to where it will walk. A thick red line means it will attack that target. The monsters act AFTER you press End turn, so use your ' +
+  '<b>Danger:</b> a red number on a hero is the damage planned against it. Red-outlined monsters will attack. ' +
+  'A faint square is where a monster will walk (same color as its outline). Hover a monster, or press Arrows, to see its arrow. The monsters act AFTER you press End turn, so use your ' +
   'turn to block, kill or avoid them.<br>' +
   '<b>Skills:</b> Tank = Taunt (nearby monsters attack the Tank). Archer = Piercing Shot ' +
   '(hits a whole line). Healer = Heal (+5 HP to another hero).'

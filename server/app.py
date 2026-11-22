@@ -3,7 +3,8 @@ from pydantic import BaseModel
 
 from brains.random_brain import RandomBrain
 from brains.scripted_brain import ScriptedBrain
-from engine.combat import ActionError, in_attack_range, skill_ready
+from engine.combat import ActionError, damage_against, in_attack_range, skill_ready
+from engine.options import _can_hit_from
 from engine.game import Game
 
 app = FastAPI(title="Squad Tactics")
@@ -56,7 +57,15 @@ def _view(game):
         for h in s.heroes():
             can_attack = [m.id for m in s.monsters() if m.alive and in_attack_range(s, h, m)]
             can_heal = [o.id for o in s.heroes() if h.skill and h.skill["name"] == "heal" and skill_ready(h) and o.id != h.id and o.alive and o.hp < o.max_hp and abs(o.pos[0] - h.pos[0]) + abs(o.pos[1] - h.pos[1]) <= h.range]
-            heroes[h.id] = {"can_attack": can_attack, "can_heal": can_heal, "skill_ready": skill_ready(h), "reachable": sorted([list(t) for t in phase.reachable(h.id)]),
+            incoming = 0
+            attackers = []
+            for p in game.plans:
+                m = s.units[p["monster"]]
+                if (m.alive and p["kind"] == "attack" and p["target"] == h.id
+                        and _can_hit_from(s, m, tuple(p["dest"]), h)):
+                    incoming += damage_against(s, h, m.damage, m.range > 1)
+                    attackers.append(m.id)
+            heroes[h.id] = {"incoming": incoming, "attackers": attackers, "can_attack": can_attack, "can_heal": can_heal, "skill_ready": skill_ready(h), "reachable": sorted([list(t) for t in phase.reachable(h.id)]),
                             "moved": phase.status[h.id]["moved"],
                             "acted": phase.status[h.id]["acted"]}
     return {"round": s.round, "result": game.result,
