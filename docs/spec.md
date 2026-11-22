@@ -661,3 +661,30 @@ These were not decided in the interview.
 **Requirement: a clean clone must run**
 - Anyone must be able to clone the public repo and run the game. Needed: README with exact steps, `requirements.txt`, `web/package.json` (exists), one start command (`python run.py`), scripted brain as the default, Laya and Kev optional, no secrets or personal paths in the repo.
 - Final check before calling the project done: clone into an empty folder, follow only the README, and confirm the game starts.
+
+---
+
+## 18. Menu, tutorial, run.py, README, clean clone (build step 8, part 2)
+
+**Menu and tutorial (`web/src/boot.js`, `menu.js`, `main.js`)**
+- `boot.js` loads the menu when the address has no `?level=`, otherwise the game. Address parameters: `?level=N&seed=S&brain=scripted|random&tutorial=1`.
+- The menu shows the title, the goal, a brain dropdown (Scripted or Random), a blue Tutorial button, and Level 1, 2 and 3 buttons. Scripted is the default brain.
+- Level 0 (`data/levels/level0.txt`) is the tutorial map: heroes on the left, 6 goblins on the right, one cover tile, one lava tile. It is not part of the evaluation.
+- Tutorial banner steps follow what the player actually did (tracked by API calls): select Tank, move, End turn, attack, Taunt, Piercing Shot, Heal (only if a hero is hurt), tips about lava and cover, finish. Skill steps stay until the last goblin dies. It can be skipped with Menu. A player can still finish without using every skill.
+- Help button on every level is not built yet.
+
+**One command to run (`run.py`, `server/main.py`, `requirements.txt`)**
+- `python run.py` starts the server on 127.0.0.1:8000. `server/main.py` mounts the game API under `/api` and serves `web/dist` at `/` if it exists. `run.py` prints a warning if `web/dist` is missing.
+- `requirements.txt` pins fastapi 0.165.0, uvicorn 0.54.0, httpx 0.28.1, pytest 9.2.0.
+- `web/dist` is not in the repo yet. It is committed last, with `git add -f` or a `.gitignore` change.
+
+**README**
+- The README has a game overview, how to play, and how to run. The README says tested on Python 3.14, Windows. Mac and Linux are untested. Screenshots are placeholders (`docs/images/`).
+- The README says the trained model is not in the live game yet.
+
+**Clean-clone test (2026-11-22): PASSED**
+- Fresh `git clone` into `D:\clean-test`, a new venv, `pip install -r requirements.txt`, `npm install`, `npm run build`: no errors (only a harmless chunk-size warning).
+- `pytest -q`: 307 passed, 0 failures (1 harmless httpx/starlette deprecation warning).
+- `python run.py`: the game started, and the Tutorial was played through to a win in the browser.
+- The test folder was deleted afterwards.
+- Small issues seen: the log lines do not show the round number.
