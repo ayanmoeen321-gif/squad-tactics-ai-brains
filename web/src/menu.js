@@ -15,6 +15,11 @@ root.innerHTML = `
   <div id="levels"></div>
 `
 const names = ['1 - Open room (5 monsters)', '2 - Split room (8 monsters)', '3 - Two doors (10 monsters, hard)']
+const tb = document.createElement('button')
+tb.textContent = 'Tutorial - learn the game step by step (recommended for new players)'
+tb.style.cssText = 'display:block;width:100%;margin:8px 0;padding:12px;font-size:16px;cursor:pointer;background:#cfe3ff'
+tb.onclick = () => { location.href = '/?level=0&tutorial=1&brain=scripted' }
+document.getElementById('levels').appendChild(tb)
 names.forEach((label, i) => {
   const b = document.createElement('button')
   b.textContent = 'Level ' + label

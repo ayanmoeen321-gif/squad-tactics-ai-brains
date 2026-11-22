@@ -140,8 +140,28 @@ function onClick(x, y) {
 
 function mid(p) { return [p[1] * CELL + CELL / 2, p[0] * CELL + CELL / 2] }
 
+const tutorial = new URLSearchParams(location.search).get('tutorial') === '1'
+const tutDiv = document.createElement('div')
+tutDiv.style.cssText = 'background:#264b8f;color:#fff;font:bold 16px sans-serif;padding:12px;margin-bottom:8px;line-height:1.5;display:' + (tutorial ? 'block' : 'none')
+
+function updateTut() {
+  if (!tutorial || !S) return
+  const left = S.units.filter((u) => u.alive && u.side === 'monster').length
+  let t
+  if (S.result === 'win') t = 'You won! You know the basics. Press Menu and try Level 1.'
+  else if (S.result) t = 'You lost, and that is fine. Press Restart and try again.'
+  else if (S.round === 1 && !S.heroes.tank.moved && !selected) t = 'Step 1: click your Tank (the blue T).'
+  else if (S.round === 1 && !S.heroes.tank.moved) t = 'Step 2: white squares show where the Tank can move. Click one toward the red goblins.'
+  else if (S.round === 1) t = 'Step 3: the colored lines are the goblins\' plans. They act AFTER you press End turn. Click End turn now (heroes you did not use just stand still).'
+  else if (left >= 2) t = 'Step 4: the goblins came to you. Click a hero, then click a goblin with a yellow outline to attack. The Tank hits hard up close. The Archer can shoot from far away.'
+  else if (left === 1) t = 'One left! Try a Skill: select a hero and press Skill. Tip: orange squares are lava (3 damage if you end your turn on one). Green squares are cover (ranged hits do 1 less).'
+  else t = ''
+  tutDiv.textContent = t
+}
+
 function redraw() {
   if (!scene || !S) return
+  updateTut()
   scene.children.removeAll(true)
   S.grid.forEach((row, r) => {
     [...row].forEach((ch, c) => {
@@ -240,6 +260,7 @@ document.body.appendChild(bar)
 
 const side = document.createElement('div')
 side.style.cssText = 'position:absolute;left:600px;top:50px;width:520px'
+side.appendChild(tutDiv)
 side.appendChild(card)
 side.appendChild(logDiv)
 side.appendChild(help)
