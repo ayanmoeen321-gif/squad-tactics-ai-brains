@@ -85,6 +85,17 @@ button('Skill', () => {
 button('End turn', () => { selected = null; act('/end_turn') })
 button('Menu', () => { location.href = '/' })
 button('Restart', () => { selected = null; act('/new', { level, seed, brain }) })
+button('Help', () => {
+  if (tipsDiv.style.display === 'block') { tipsDiv.style.display = 'none'; return }
+  const tips = {
+    tank: '<b>Tank:</b> tough, hits adjacent only. Skill = Taunt: monsters within 3 steps must attack the Tank this turn. Use it when the Tank stands where you want the fight.',
+    archer: '<b>Archer:</b> hits from 4 tiles away, needs a clear line. Skill = Piercing Shot: hits every monster in a straight line. Weak (10 HP), so keep it behind the Tank.',
+    healer: '<b>Healer:</b> weak attack. Skill = Heal: +5 HP to another hero within 3 tiles. Cannot heal herself.',
+  }
+  const basics = '<b>Tips:</b> Each hero moves once, then acts once. Each colored arrow is one monster moving: from where it stands to where it will walk. A thick red line means it will attack that target. No arrow means it stays. All act after End turn, so block, kill or dodge them. Green = cover (ranged hits do 1 less). Orange = lava (3 damage if you end there). Click a hero to get tips for it.'
+  window.refreshTips = () => { tipsDiv.innerHTML = (selected && tips[selected]) ? tips[selected] : basics }; window.refreshTips()
+  tipsDiv.style.display = 'block'
+})
 
 const card = document.createElement('div')
 card.style.cssText = 'color:#fff;font:14px sans-serif;padding:8px;min-height:84px;line-height:1.5;border-bottom:1px solid #333;margin-bottom:8px'
@@ -144,6 +155,9 @@ const tutorial = new URLSearchParams(location.search).get('tutorial') === '1'
 const tutDiv = document.createElement('div')
 tutDiv.style.cssText = 'background:#264b8f;color:#fff;font:bold 16px sans-serif;padding:12px;margin-bottom:8px;line-height:1.5;display:' + (tutorial ? 'block' : 'none')
 
+const tipsDiv = document.createElement('div')
+tipsDiv.style.cssText = 'background:#3a3a1a;color:#fff;font:14px sans-serif;padding:10px;margin-bottom:8px;line-height:1.5;display:none'
+
 const tutDone = {}
 
 function updateTut() {
@@ -155,7 +169,7 @@ function updateTut() {
   else if (S.result) t = "You lost, and that is fine. Press Restart and try again."
   else if (!tutDone['/move'] && !selected) t = "Step 1: click your Tank (the blue T)."
   else if (!tutDone['/move']) t = "Step 2: white squares show where the Tank can move. Click one toward the red goblins."
-  else if (!tutDone['/end_turn']) t = "Step 3: the colored lines are the goblins' plans. They act AFTER you press End turn. Click End turn now."
+  else if (!tutDone['/end_turn']) t = "Step 3: each colored arrow shows where one goblin will walk (the arrowhead is its destination). A thick red line means it will hit that hero. They act AFTER you press End turn. Click End turn now."
   else if (!tutDone['/attack']) t = "Step 4: the goblins came to you. Click a hero, then click a goblin with a yellow outline to attack it."
   else if (!tutDone['/taunt'] && left >= 1) t = "Step 5: Taunt. Click the Tank, press Skill. Goblins near the Tank must attack it this turn. Then click End turn or use other heroes."
   else if (!tutDone['/piercing_shot'] && left >= 1) t = "Step 6: Piercing Shot. Click the Archer, press Skill, then click in the direction of the goblins. It hits every monster in that line. Works best when goblins line up."
@@ -165,6 +179,7 @@ function updateTut() {
   tutDiv.textContent = t
 }
 function redraw() {
+  if (window.refreshTips) window.refreshTips()
   if (!scene || !S) return
   updateTut()
   scene.children.removeAll(true)
@@ -179,7 +194,7 @@ function redraw() {
     if (!byId[p.monster].alive) return
     const a = mid(byId[p.monster].pos)
     const b = mid(p.dest)
-    const color = Phaser.Display.Color.HSVToRGB((i * 0.17) % 1, 0.8, 1).color
+    const color = Phaser.Display.Color.HSVToRGB(0.1 + ((i * 0.17) % 0.75), 0.8, 1).color
     g.lineStyle(3, color, 0.7)
     if (a[0] !== b[0] || a[1] !== b[1]) {
       g.lineBetween(a[0], a[1], b[0], b[1])
@@ -191,7 +206,7 @@ function redraw() {
     }
     if (p.kind === 'attack' && p.target && byId[p.target] && byId[p.target].alive) {
       const t2 = mid(byId[p.target].pos)
-      g.lineStyle(3, 0xff3333, 0.9)
+      g.lineStyle(5, 0xff0000, 1)
       g.lineBetween(b[0], b[1], t2[0], t2[1])
       g.lineBetween(t2[0] - 8, t2[1] - 8, t2[0] + 8, t2[1] + 8)
       g.lineBetween(t2[0] - 8, t2[1] + 8, t2[0] + 8, t2[1] - 8)
@@ -266,6 +281,7 @@ document.body.appendChild(bar)
 const side = document.createElement('div')
 side.style.cssText = 'position:absolute;left:600px;top:50px;width:520px'
 side.appendChild(tutDiv)
+side.appendChild(tipsDiv)
 side.appendChild(card)
 side.appendChild(logDiv)
 side.appendChild(help)
