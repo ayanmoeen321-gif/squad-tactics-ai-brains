@@ -237,8 +237,8 @@ function redraw() {
     scene.add.rectangle(x, y + 16, Math.max(1, (CELL - 12) * (u.hp / u.max_hp)), 4, 0x55ff55)
     const inc = u.side === 'hero' && S.heroes[u.id] ? S.heroes[u.id].incoming : 0
     if (inc > 0) {
-      scene.add.rectangle(x - 13, y - 14, 18, 13, 0xaa0000)
-      scene.add.text(x - 13, y - 14, '-' + inc, { fontSize: '11px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5)
+      const dies = inc >= u.hp; const bx = dies ? x - 6 : x - 13; scene.add.rectangle(bx, y - 14, dies ? 32 : 18, dies ? 17 : 13, dies ? 0xff0000 : 0xaa0000).setStrokeStyle(dies ? 2 : 0, 0xffffff)
+      scene.add.text(bx, y - 14, '-' + inc + (dies ? ' !' : ''), { fontSize: dies ? '13px' : '11px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5)
     }
     scene.add.text(x + 14, y + 8, String(u.hp), { fontSize: '11px', color: '#fff', backgroundColor: '#000a' }).setOrigin(0.5)
     if (info && u.side === 'monster' && info.can_attack.includes(u.id)) {

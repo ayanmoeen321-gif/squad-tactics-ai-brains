@@ -706,3 +706,23 @@ These were not decided in the interview.
 - Meaning: a colored arrow is one monster moving from where it stands to where it will walk (the arrowhead is its destination). The color only tells monsters apart. A thick red line from the destination to the target means it will attack that target. No arrow means it stays.
 - Bug fixed: the first monster's arrow was red, the same color as the attack line. Monster colors now start at hue 0.1 and skip red; the attack line is thicker (5 px) and pure red.
 - Known: the X on the attack line is hidden under the target square, so the text says "thick red line", not "line with an X". Arrow readability on Level 3 is still to be checked.
+
+---
+
+## 20. Danger badges instead of always-on arrows (build step 8, part 4)
+
+**Why:** the author asked whether arrows are the best way to show monster plans. On Level 3 (10 monsters) the arrows piled up, and arrowheads were hidden under units. A short web search (articles and forum posts, no player tests) found: Into the Breach marks the tile each enemy will hit, Slay the Spire puts an icon with the damage above each enemy, and one design write-up warns that too many telegraphs at once become noise. None of these games has 10 monsters that both walk and attack, so this is direction, not proof.
+
+**What was built**
+- Server (`server/app.py`): each hero in the state has `incoming` (total planned damage) and `attackers` (monster ids). Dead monsters are skipped. A plan counts only if the monster can still hit that hero from its planned tile (`_can_hit_from`). Damage uses `damage_against`, so cover is counted. The badge does not predict the fallback retarget of a broken plan (spec section 6). Test: `tests/test_server_incoming.py`. Tests: 309 passed.
+- Browser (`web/src/main.js`): a red badge with the incoming damage on each threatened hero. A hero whose incoming damage is at or above its HP gets a bigger, bright-red badge with a white border and "!". Monsters that will attack get a red outline. Each monster that will move has a thin outline in its own color, and its destination is a faint square with an outline in the same color. A monster's full arrow shows only while it is hovered. An Arrows button shows all arrows at once (off by default).
+- The Help box, Tutorial step 3 and "How to play" were rewritten for the new view.
+- The log shows the round number on every line (`R3 [HERO] ...`).
+
+**Author feedback:** less clutter, but harder to see all monsters at once, and planning takes longer. Fixes: matching color outlines and the Arrows button. Decision: keep it. If a full-game playtest prefers plain arrows, go back to the commit before `1ec509f` for `web/src/main.js` and `server/app.py`.
+
+**Known**
+- The hover card shows "Plan: advance" with no destination tile.
+- Some blue and purple outlines look alike. Pairing still works because each square sits beside its monster.
+- A Brute next to the Tank had no red outline in round 4. Probable cause is the overkill block (earlier plans already kill the Tank), not verified.
+- A human can still reach the round 30 timeout on Level 3 (Tank alone, a Brute holding a doorway). To be checked in the Level 3 playtest step.
