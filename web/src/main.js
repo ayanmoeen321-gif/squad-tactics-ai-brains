@@ -30,8 +30,8 @@ async function api(path, body) {
 
 async function act(path, body) {
   try {
-    const j = await api(path, body)
-    S = j.state || j; if (path === '/new') { logLines.length = 0; logDiv.innerHTML = ''; for (const k in tutDone) delete tutDone[k] } else { tutDone[path] = true }; if (j.events) logEvents(j.events, path)
+    const before = S ? S.round : 1; const j = await api(path, body)
+    S = j.state || j; if (path === '/new') { logLines.length = 0; logDiv.innerHTML = ''; for (const k in tutDone) delete tutDone[k] } else { tutDone[path] = true }; if (j.events) logEvents(j.events, path, before)
     msg.textContent = ''
   } catch (e) {
     msg.textContent = e.message
@@ -44,21 +44,22 @@ const logLines = []
 const logDiv = document.createElement('div')
 logDiv.style.cssText = 'color:#ccc;font:14px sans-serif;padding:8px;max-width:560px;line-height:1.5'
 
-function logEvents(events, path) {
+function logEvents(events, path, round) {
+  const R = 'R' + round + ' '
   const side = (id) => id === 'tank' || id === 'archer' || id === 'healer' ? '[HERO] ' : '[MONSTER] '
   const n = (id) => { const u = S.units.find((v) => v.id === id); return u ? u.label : id }
-  if (path === '/end_turn') logLines.push('--- Monsters act ---')
+  if (path === '/end_turn') logLines.push(R + '--- Monsters act ---')
   events.forEach((e) => {
     const tag = e.taunted ? ' (taunted)' : ''
     if (e.type === 'attack' || e.type === 'piercing_shot') {
       const what = e.type === 'attack' ? 'hit' : 'pierced'
-      logLines.push(side(e.attacker) + n(e.attacker) + ' ' + what + ' ' + n(e.target) + ' for ' + e.damage + (e.killed ? ' - dead' : '') + tag)
+      logLines.push(R + side(e.attacker) + n(e.attacker) + ' ' + what + ' ' + n(e.target) + ' for ' + e.damage + (e.killed ? ' - dead' : '') + tag)
     } else if (e.type === 'heal') {
-      logLines.push(side(e.healer) + n(e.healer) + ' healed ' + n(e.target) + ' +' + e.restored)
+      logLines.push(R + side(e.healer) + n(e.healer) + ' healed ' + n(e.target) + ' +' + e.restored)
     } else if (e.type === 'lava') {
-      logLines.push(n(e.target) + ' burned by lava for ' + e.damage + (e.killed ? ' - dead' : ''))
+      logLines.push(R + n(e.target) + ' burned by lava for ' + e.damage + (e.killed ? ' - dead' : ''))
     } else if (e.type === 'taunt') {
-      logLines.push(side(e.unit) + n(e.unit) + ' used Taunt on ' + (e.affected ? e.affected.length : 0) + ' monster(s)')
+      logLines.push(R + side(e.unit) + n(e.unit) + ' used Taunt on ' + (e.affected ? e.affected.length : 0) + ' monster(s)')
     }
   })
   if (logLines.length > 40) logLines.splice(0, logLines.length - 40)
