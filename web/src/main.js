@@ -155,5 +155,23 @@ new Phaser.Game({
   parent: 'app',
   scene: Board,
 })
+const goal = document.createElement('div')
+goal.style.cssText = 'color:#fff;font:bold 17px sans-serif;padding:8px'
+goal.textContent = 'Goal: kill all monsters (red) before your heroes (blue) die. You have 30 rounds.'
+document.body.insertBefore(goal, document.body.firstChild)
+
+const help = document.createElement('div')
+help.style.cssText = 'color:#aaa;font:14px sans-serif;padding:8px;max-width:560px;line-height:1.5'
+help.innerHTML =
+  '<b>How to play:</b> 1) Click a hero. 2) Click a white tile to move. ' +
+  '3) Click a monster with a yellow outline to attack it (or use Skill). ' +
+  '4) Press End turn.<br>' +
+  '<b>Colored lines:</b> each one is a monster\'s plan for this round, from where it ' +
+  'stands to where it will go. The monsters act AFTER you press End turn, so use your ' +
+  'turn to block, kill or avoid them.<br>' +
+  '<b>Skills:</b> Tank = Taunt (nearby monsters attack the Tank). Archer = Piercing Shot ' +
+  '(hits a whole line). Healer = Heal (+5 HP to another hero).'
+
 document.body.appendChild(msg)
 document.body.appendChild(bar)
+document.body.appendChild(help)
