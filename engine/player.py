@@ -99,6 +99,8 @@ class PlayerPhase:
         if not skill_ready(hero):
             raise ActionError("taunt is on cooldown")
         affected = apply_taunt(self.state, hero, self.plans)
+        if not affected:
+            raise ActionError("No monster is close enough to taunt (within 3 steps and able to reach the Tank).")
         hero.cooldown = hero.skill["cooldown"]
         self.status[hero_id]["acted"] = True
         return [{"type": "taunt", "unit": hero_id, "affected": affected}]

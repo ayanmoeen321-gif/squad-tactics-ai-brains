@@ -48,9 +48,12 @@ def test_monster_that_cannot_reach_the_tank_keeps_its_plan():
     s.grid.tiles[5][4] = "#"
     plans = [adv("goblin_1", (5, 7)), adv("goblin_2", (5, 6))]
     before = [dict(p) for p in plans]
-    events = PlayerPhase(s, plans).taunt("tank")
-    assert events[0]["affected"] == []
+    phase = PlayerPhase(s, plans)
+    with pytest.raises(ActionError):
+        phase.taunt("tank")
     assert plans == before
+    assert s.units["tank"].cooldown == 0
+    assert phase.status["tank"]["acted"] is False
 
 
 def test_two_taunted_monsters_get_different_tiles_next_to_the_tank():
@@ -73,9 +76,12 @@ def test_ranged_monster_attacks_from_where_it_stands():
 def test_dead_monsters_plan_is_left_alone():
     s = scene(1, {"tank": (5, 5)})
     plans = [adv("goblin_1", (5, 7))]
-    events = PlayerPhase(s, plans).taunt("tank")
-    assert events[0]["affected"] == []
+    phase = PlayerPhase(s, plans)
+    with pytest.raises(ActionError):
+        phase.taunt("tank")
     assert plans == [adv("goblin_1", (5, 7))]
+    assert s.units["tank"].cooldown == 0
+    assert phase.status["tank"]["acted"] is False
 
 
 def test_taunt_uses_the_tanks_position_after_moving():
