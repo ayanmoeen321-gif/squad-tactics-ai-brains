@@ -726,3 +726,12 @@ These were not decided in the interview.
 - Some blue and purple outlines look alike. Pairing still works because each square sits beside its monster.
 - A Brute next to the Tank had no red outline in round 4. Probable cause is the overkill block (earlier plans already kill the Tank), not verified.
 - A human can still reach the round 30 timeout on Level 3 (Tank alone, a Brute holding a doorway). To be checked in the Level 3 playtest step.
+
+---
+
+## 21. Result screen (build step 8, part 5)
+
+- When a game ends, a panel covers the board with a dark layer: Victory (green) or Defeat (red), the reason (all monsters dead, all heroes dead, or the 30-round limit), the round it ended in, heroes alive with HP, and monsters left.
+- Buttons: Play again, Next level (only after a win on Levels 0 to 2), View board (hides the panel to look at the final position), Menu. The panel is placed over the canvas using its position on the page. It resets when a new game starts.
+- The server was not changed. The button row under the board now wraps (it ran into the side panel after the Arrows button was added). The tutorial win banner says "Press Next level".
+- Known: "Ended in round N" is capped at 30 because it was not checked whether the round counter advances when the game ends. Not tested on a window of a different size. Settings screen is still not built (first on the cut list).

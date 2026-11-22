@@ -15,7 +15,7 @@ let scene = null
 const msg = document.createElement('div')
 msg.style.cssText = 'color:#ddd;font:16px sans-serif;padding:8px;min-height:24px'
 const bar = document.createElement('div')
-bar.style.cssText = 'padding:0 8px'
+bar.style.cssText = 'padding:0 8px;display:flex;flex-wrap:wrap;gap:6px;max-width:580px'
 
 async function api(path, body) {
   const r = await fetch('/api' + path, {
@@ -42,6 +42,46 @@ async function act(path, body) {
 
 let hoverId = null
 let showArrows = false
+let resultHidden = false
+const resultDiv = document.createElement('div')
+resultDiv.style.cssText = 'position:absolute;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:10'
+document.body.appendChild(resultDiv)
+
+function showResult() {
+  if (resultHidden || resultDiv.style.display === 'flex') return
+  const cv = document.querySelector('canvas')
+  if (!cv) return
+  const r = cv.getBoundingClientRect()
+  resultDiv.style.left = (r.left + window.scrollX) + 'px'
+  resultDiv.style.top = (r.top + window.scrollY) + 'px'
+  resultDiv.style.width = r.width + 'px'
+  resultDiv.style.height = r.height + 'px'
+  const win = S.result === 'win'
+  const alive = S.units.filter((u) => u.side === 'hero' && u.alive)
+  const left = S.units.filter((u) => u.side === 'monster' && u.alive)
+  const why = win ? 'All monsters are dead.' : (alive.length === 0 ? 'All your heroes are dead.' : 'The 30 rounds ran out with monsters still alive.')
+  const box = document.createElement('div')
+  box.style.cssText = 'color:#fff;font:16px sans-serif;padding:22px 30px;line-height:1.7;text-align:center;border-radius:8px;max-width:80%;background:' + (win ? '#1f6b2e' : '#7a1f1f')
+  box.innerHTML = '<div style="font:bold 32px sans-serif;margin-bottom:6px">' + (win ? 'Victory!' : 'Defeat') + '</div>' +
+    why + '<br>Ended in round ' + Math.min(S.round, 30) + '<br>Heroes alive: ' +
+    (alive.map((h) => h.label + ' ' + h.hp + '/' + h.max_hp).join(', ') || 'none') +
+    '<br>Monsters left: ' + left.length + '<br>'
+  const mk = (label, fn) => {
+    const b = document.createElement('button')
+    b.textContent = label
+    b.style.cssText = 'margin:12px 6px 0 6px;padding:7px 16px;font-size:15px'
+    b.onclick = fn
+    box.appendChild(b)
+  }
+  mk('Play again', () => { selected = null; act('/new', { level, seed, brain }) })
+  if (win && level < 3) mk('Next level', () => { location.href = '/?level=' + (level + 1) + '&brain=' + brain })
+  mk('View board', () => { resultHidden = true; resultDiv.style.display = 'none' })
+  mk('Menu', () => { location.href = '/' })
+  resultDiv.innerHTML = ''
+  resultDiv.appendChild(box)
+  resultDiv.style.display = 'flex'
+}
+
 const logLines = []
 const logDiv = document.createElement('div')
 logDiv.style.cssText = 'color:#ccc;font:14px sans-serif;padding:8px;max-width:560px;line-height:1.5'
@@ -171,7 +211,7 @@ function updateTut() {
   const left = S.units.filter((u) => u.alive && u.side === 'monster').length
   const hurt = S.units.some((u) => u.alive && u.side === 'hero' && u.hp < u.max_hp)
   let t
-  if (S.result === 'win') t = "You won! You know the basics. Press Menu and try Level 1."
+  if (S.result === 'win') t = "You won! You know the basics. Press Next level to try Level 1."
   else if (S.result) t = "You lost, and that is fine. Press Restart and try again."
   else if (!tutDone['/move'] && !selected) t = "Step 1: click your Tank (the blue T)."
   else if (!tutDone['/move']) t = "Step 2: white squares show where the Tank can move. Click one toward the red goblins."
@@ -186,6 +226,7 @@ function updateTut() {
 }
 function redraw() {
   if (window.refreshTips) window.refreshTips()
+  if (S && !S.result) { resultDiv.style.display = 'none'; resultHidden = false }
   if (!scene || !S) return
   updateTut()
   scene.children.removeAll(true)
@@ -251,7 +292,7 @@ function redraw() {
     }
   })
   if (S.result) {
-    msg.textContent = S.result === 'win' ? 'YOU WIN! Press Restart.' : 'You lost. Press Restart.'
+    msg.textContent = S.result === 'win' ? 'YOU WIN!' : 'You lost.'; showResult()
   } else if (!msg.textContent) {
     msg.textContent = 'Round ' + S.round + (selected ? ' - ' + selected : ' - click a hero')
   }
