@@ -15,7 +15,7 @@ class LayaBrain:
         self.timeout = timeout
         self.fallback = fallback or ScriptedBrain()
         self.last_info = None
-        self._pool = ThreadPoolExecutor(max_workers=1)
+        self._pool = ThreadPoolExecutor(max_workers=2)
 
     def _ask(self, row):
         out = self.agent.predict(row["state"], row["questions"])
