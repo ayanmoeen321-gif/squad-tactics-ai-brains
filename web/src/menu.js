@@ -10,6 +10,7 @@ root.innerHTML = `
   <select id="brain" style="font-size:16px;padding:6px">
     <option value="scripted">Scripted (hand-made rules)</option>
     <option value="random">Random (easy)</option>
+    <option value="laya">Laya (needs a GPU server)</option>
   </select>
   <p style="margin:20px 0 6px"><b>Choose a level:</b></p>
   <div id="levels"></div>

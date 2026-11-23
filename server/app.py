@@ -1,7 +1,12 @@
+import os
+
+import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from brains.laya_brain import LayaBrain
 from brains.random_brain import RandomBrain
+from brains.remote_agent import RemoteAgent
 from brains.scripted_brain import ScriptedBrain
 from engine.combat import ActionError, damage_against, in_attack_range, skill_ready
 from engine.options import _can_hit_from
@@ -87,10 +92,29 @@ def _do(fn, *args):
     return {"events": events, "state": _view(game)}
 
 
+def _laya_health(url):
+    return httpx.get(url + "/health", timeout=5.0).json().get("loaded", [])
+
+
+def _laya_brain():
+    url = os.environ.get("LAYA_URL", "http://127.0.0.1:8100")
+    model = os.environ.get("LAYA_MODEL", "squad")
+    timeout = float(os.environ.get("LAYA_TIMEOUT", "3.0"))
+    try:
+        loaded = _laya_health(url)
+    except Exception:
+        raise HTTPException(400, f"Laya server not reachable at {url}. Start it, or pick another brain.")
+    if model not in loaded:
+        raise HTTPException(400, f"Laya server at {url} has no model named {model!r} loaded (loaded: {loaded}).")
+    return LayaBrain(RemoteAgent(url, model=model, timeout=timeout), name="laya", timeout=timeout)
+
+
 @app.post("/new")
 def new(body: NewGame):
     if body.brain == "scripted":
         brain = ScriptedBrain()
+    elif body.brain == "laya":
+        brain = _laya_brain()
     elif body.brain == "random":
         brain = RandomBrain(body.seed)
     else:
