@@ -40,6 +40,8 @@ async function act(path, body) {
   redraw()
 }
 
+const brainDiv = document.createElement('div')
+brainDiv.style.cssText = 'font:13px sans-serif;padding:4px 8px;display:none'
 let hoverId = null
 let showArrows = false
 let resultHidden = false
@@ -226,6 +228,7 @@ function updateTut() {
   tutDiv.textContent = t
 }
 function redraw() {
+  if (S && S.brain_stats) { const b = S.brain_stats; brainDiv.style.display = 'block'; brainDiv.style.color = b.fallbacks > 0 ? '#ff8080' : '#9fd'; brainDiv.textContent = 'Laya: ' + b.decisions + ' decisions, ' + b.fallbacks + ' fell back to scripted, ' + b.avg_seconds + ' s average, ' + b.worst_seconds + ' s slowest' } else { brainDiv.style.display = 'none' }
   if (window.refreshTips) window.refreshTips()
   if (S && !S.result) { resultDiv.style.display = 'none'; resultHidden = false }
   if (!scene || !S) return
@@ -338,6 +341,7 @@ document.body.appendChild(bar)
 
 const side = document.createElement('div')
 side.style.cssText = 'position:absolute;left:600px;top:50px;width:520px'
+side.appendChild(brainDiv)
 side.appendChild(tutDiv)
 side.appendChild(tipsDiv)
 side.appendChild(card)

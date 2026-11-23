@@ -1,3 +1,5 @@
+import json
+import threading
 import os
 
 import httpx
@@ -11,9 +13,11 @@ from brains.scripted_brain import ScriptedBrain
 from engine.combat import ActionError, damage_against, in_attack_range, skill_ready
 from engine.options import _can_hit_from
 from engine.game import Game
+from eval.runner import LoggingBrain
 
 app = FastAPI(title="Squad Tactics")
-G = {"game": None}
+G = {"game": None, "n": 0}
+_new_lock = threading.Lock()
 
 
 class NewGame(BaseModel):
@@ -78,7 +82,7 @@ def _view(game):
             "units": [_unit(u) for u in s.units.values()],
             "plans": [{"monster": p["monster"], "kind": p["kind"],
                        "target": p["target"], "dest": list(p["dest"])} for p in game.plans],
-            "heroes": heroes}
+            "heroes": heroes, "brain_stats": _brain_stats()}
 
 
 def _do(fn, *args):
@@ -90,6 +94,21 @@ def _do(fn, *args):
     except ActionError as e:
         raise HTTPException(400, str(e))
     return {"events": events, "state": _view(game)}
+
+
+def _live_sink(row):
+    folder = os.environ.get("LIVE_LOG_DIR", "logs")
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, "live_decisions.jsonl"), "a", encoding="utf-8") as f:
+        f.write(json.dumps(row) + "\n")
+
+
+def _brain_stats():
+    b = G.get("brain")
+    if b is None or b.calls == 0:
+        return None
+    return {"name": b.name, "decisions": b.calls, "fallbacks": b.fallbacks,
+            "avg_seconds": round(b.total_time / b.calls, 2), "worst_seconds": round(b.worst, 2)}
 
 
 def _laya_health(url):
@@ -111,6 +130,12 @@ def _laya_brain():
 
 @app.post("/new")
 def new(body: NewGame):
+    with _new_lock:
+        return _new(body)
+
+
+def _new(body: NewGame):
+    G["n"] += 1
     if body.brain == "scripted":
         brain = ScriptedBrain()
     elif body.brain == "laya":
@@ -119,6 +144,11 @@ def new(body: NewGame):
         brain = RandomBrain(body.seed)
     else:
         raise HTTPException(400, f"unknown brain {body.brain!r}")
+    if body.brain == "laya":
+        brain = LoggingBrain(brain, {"source": "live", "game": G["n"], "level": body.level, "seed": body.seed, "brain": "laya"}, sink=_live_sink)
+        G["brain"] = brain
+    else:
+        G["brain"] = None
     G["game"] = Game(body.level, body.seed, brain)
     return _view(G["game"])
 

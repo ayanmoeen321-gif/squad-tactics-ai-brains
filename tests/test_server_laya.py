@@ -32,10 +32,26 @@ def test_laya_brain_model_not_loaded_is_a_clear_400(monkeypatch):
     assert r.status_code == 400 and "no model named" in r.json()["detail"]
 
 
-def test_laya_brain_asks_the_remote_agent(monkeypatch):
+def test_laya_brain_asks_the_remote_agent(monkeypatch, tmp_path):
+    monkeypatch.setenv("LIVE_LOG_DIR", str(tmp_path))
     calls.clear()
     monkeypatch.setattr(appmod, "_laya_health", lambda url: ["squad"])
     monkeypatch.setattr(appmod, "RemoteAgent", FakeAgent)
     r = client.post("/new", json={"level": 1, "seed": 0, "brain": "laya"})
     assert r.status_code == 200 and r.json()["round"] == 1
     assert len(calls) > 0
+
+def test_laya_game_reports_stats_and_writes_a_log(monkeypatch, tmp_path):
+    monkeypatch.setenv("LIVE_LOG_DIR", str(tmp_path))
+    monkeypatch.setattr(appmod, "_laya_health", lambda url: ["squad"])
+    monkeypatch.setattr(appmod, "RemoteAgent", FakeAgent)
+    r = client.post("/new", json={"level": 1, "seed": 0, "brain": "laya"})
+    stats = r.json()["brain_stats"]
+    assert stats["name"] == "laya" and stats["decisions"] > 0 and stats["fallbacks"] == 0
+    lines = (tmp_path / "live_decisions.jsonl").read_text().splitlines()
+    assert len(lines) == stats["decisions"]
+
+
+def test_scripted_game_has_no_brain_stats():
+    r = client.post("/new", json={"level": 1, "seed": 0, "brain": "scripted"})
+    assert r.json()["brain_stats"] is None
