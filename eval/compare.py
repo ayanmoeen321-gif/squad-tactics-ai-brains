@@ -32,6 +32,9 @@ def make_brain(name, seed, laya_agent=None):
     if name == "laya_a":
         from brains.laya_brain import LayaBrain
         return LayaBrain(laya_agent, name="laya_a", version="run_e4")
+    if name == "kev_zero":
+        from brains.laya_brain import LayaBrain
+        return LayaBrain(laya_agent, name="kev_zero", version="remote")
     raise ValueError(name)
 
 
@@ -120,12 +123,18 @@ if __name__ == "__main__":
     ap.add_argument("--seeds", type=int, default=50)
     ap.add_argument("--levels", default="1,2,3")
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--remote", default=None, help="URL of a System One server (Kev or Laya); plays that model instead of loading a checkpoint")
+    ap.add_argument("--remote-model", default="kev-latest", help="model name sent to the server")
     ap.add_argument("--log-dir", default=None)
     a = ap.parse_args()
     log_dir = a.log_dir or time.strftime("logs/compare_%Y%m%d_%H%M%S")
     names = a.brains.split(",")
     agent = None
-    if a.checkpoint:
+    if a.remote:
+        from brains.remote_agent import RemoteAgent
+        agent = RemoteAgent(a.remote, model=a.remote_model)
+        names.append(a.brain)
+    elif a.checkpoint:
         import laya
         agent = laya.load(a.checkpoint, device=a.device)
         names.append(a.brain)
