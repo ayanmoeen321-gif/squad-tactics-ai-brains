@@ -753,3 +753,29 @@ These were not decided in the interview.
 - Two games by the person who built the game are a small sample.
 
 **Decision (author): balancing is postponed to the end, after the rest of the project.** Even if the balance is not perfect, the project can be finished. At that time: test options with headless runs on dev seeds (340 and up, never 0 to 49), for example Tank HP 26 and Healer HP 15 on all levels, or two fewer monsters on Level 3. Any change to Level 3 data means re-running the evaluation numbers and probably retraining the Laya models on the new Level 3.
+
+---
+
+## 23. Laya as a live brain through a server (build step 8, part 6)
+
+**What was built**
+- `brains/remote_agent.py` (`RemoteAgent`): same `predict(state, questions)` as a local Laya agent, but it posts to a Laya server (`POST /v1/systemone`) and always sends `"model": "squad"`, so the server cannot route to another checkpoint. `LayaBrain` is unchanged.
+- `server/app.py`: `/new` accepts `brain: "laya"`. Settings from environment variables: `LAYA_URL` (default `http://127.0.0.1:8100`), `LAYA_MODEL` (default `squad`), `LAYA_TIMEOUT` (default 3.0 s, the spec rule). Before the game starts it asks `/health`; an unreachable server or a missing model gives a clear 400, not silent scripted play. The menu has a third entry, "Laya (needs a GPU server)". Scripted stays the default.
+- Every live Laya decision is logged to `logs/live_decisions.jsonl` (git-ignored; folder set by `LIVE_LOG_DIR`) with game number, round, monster, options, choice, fallback and latency, using `LoggingBrain`. The game state has `brain_stats` and the page shows "Laya: N decisions, F fell back to scripted, avg s, worst s" (red if any fallback). `/new` calls are serialized with a lock. Tests: 316 passed.
+
+**How the Laya server was run on the laptop (CPU)**
+- `laya-serve` is configured only by environment variables. It needs `uvicorn` and `fastapi` installed in the Laya venv. Run D is registered with `LAYA_EXTRA_MODELS='{"squad": "D:/squad-models/run_d_e4"}'`, plus `LAYA_MODELS=squad`, `LAYA_DEFAULT_MODEL=squad`, `LAYA_DEVICE=cpu`, `LAYA_HOST=127.0.0.1`, `LAYA_PORT=8100`. Setting `LAYA_MODELS` matters: without it the server may preload every built-in checkpoint, which does not fit in the laptop's 3.7 GB RAM (it already used 3.2 GB with only Run D loaded).
+- `/health` reported only `squad` loaded, device cpu, 0 CPU fallbacks.
+
+**Results (one author, Level 1, scripted heroes not used: a human played)**
+- Smoke test (Level 2, round 1 plans): 6 model calls, 0 fallbacks, 4.37 s average per model call.
+- Live games on Level 1: 3 games won by the human heroes (rounds 12, 6, 6). In the logged runs: 0 fallbacks. Average 6.3 to 7.2 s per decision (including one-option decisions that skip the model), worst 10.83 s. A whole game took about 2 minutes. Slower than the smoke test; cause not verified (low RAM or a busy CPU).
+- The brain really chooses: attack options when a hero is in reach, advance otherwise. One game says nothing about strength.
+
+**Limits and bugs found**
+- The laptop CPU is far too slow for the 3 s rule. The live test used `LAYA_TIMEOUT=60`. A GPU server (about 30 ms per decision) is the plan; the tunnel to Kaggle or Colab is not tried yet.
+- The first Laya game was not logged. Its stats and the "monsters move late" impression cannot be checked. The likely cause was slowness (30 to 40 s per round), not a bug, but not proven.
+- A test wrote fake rows into the real log. Fixed: the test uses a temporary folder.
+- A rebuild was needed before the page showed the stats line: the `web/dist` built at 08:00 did not contain the change (cause not found).
+- Two `/new` calls were seen once in the first logged game; a later game with one fresh load made exactly one. Probably an extra tab or refresh, not proven.
+- `LayaBrain` keeps a one-worker pool and does not cancel a timed-out call, so a slow server can make later calls queue behind it. Not fixed.
