@@ -779,3 +779,59 @@ These were not decided in the interview.
 - A rebuild was needed before the page showed the stats line: the `web/dist` built at 08:00 did not contain the change (cause not found).
 - Two `/new` calls were seen once in the first logged game; a later game with one fresh load made exactly one. Probably an extra tab or refresh, not proven.
 - `LayaBrain` keeps a one-worker pool and does not cancel a timed-out call, so a slow server can make later calls queue behind it. Not fixed.
+---
+
+## 24. Laya pool fix, GPU server research, demo options (2026-11-23)
+
+**LayaBrain pool fix (commit 2938058)**
+- `LayaBrain` now has a pool of 2 workers. Before, a timed-out call kept the only worker busy, so the retry waited behind it. Found by a failing test (`tests/test_laya_brain_timeout.py`), then fixed. Tests: 317 passed.
+
+**Running Laya live: research (web search, Nov 2026; no official rule found either way for Kaggle)**
+- Colab free: its FAQ restricts web-service offerings unrelated to interactive compute, remote proxies, and (free tier) bypassing the notebook UI. Runtimes can end without warning. Wrong place for a public tunnel.
+- Kaggle: public templates exist for FastAPI GPU servers with Cloudflare tunnels, but a user comment says tunnels got banned. Sessions count toward the weekly hours even when idle. A free trycloudflare link is temporary and changes each time. Anyone with the link can call the server; Laya supports `LAYA_API_KEY`, but `RemoteAgent` does not send a key yet.
+- Laya on the laptop CPU takes about 4 to 7 s per decision (Run D), far over the 3 s rule.
+
+**Demo options (safest first)**
+1. Play live with the scripted brain (same game, instant) and show Laya and Kev through tables, charts and a demo video recorded on a GPU.
+2. Run both servers on a GPU computer at the demo and play in that machine's browser.
+3. A free Hugging Face Space on CPU (unverified: memory and speed).
+4. A Kaggle tunnel (policy unclear; do not rely on it in front of an audience).
+5. Make Laya faster on the laptop (quantization etc.; changes the model; least certain).
+- Decision (Ayan, 2026-11-24): the university computers are not part of the GPU plan. All GPU work runs on free Kaggle and Colab.
+
+---
+
+## 25. Kev on free GPUs (Kaggle and Colab T4) (2026-11-24 to 2026-11-26)
+
+**Setup facts (measured on a Kaggle T4, 15 GB; Python 3.13 works on Kaggle and Colab)**
+- Kev installs with `uv sync --extra serve` from the GitHub repo. Servers: `python -m kev.serve --run <model or folder> --port N`. The API is the same System One shape, so `RemoteAgent` and `LayaBrain` work unchanged (model name `kev-latest`).
+- `eval/compare.py` got `--remote URL`, `--remote-model` and a `kev_zero` brain (commit ad87bd6; test `tests/test_compare_remote.py`). The table label `kev_zero` is used for every Kev model played through a server; the run name must be said next to the numbers. `eval/kev_convert.py` turns Laya rows (`expected`) into Kev rows (`label`) (commit 81e958f; `tests/test_kev_convert.py`).
+- Kev-4B serving: 14.3 GB of 15.4 GB used, about 0.9 to 1.2 s per decision. Kev-0.8B serving: 3.9 GB, about 160 to 210 ms per decision. Laya on a T4 is about 30 ms.
+- `flash-linear-attention` 0.5.2 (the version Kev pins) made no difference to serving speed and made training slower (4B, 128 longest rows: 8.66 s per row with it, 5.2 s without). Training runs without it.
+- First calls after a server start can time out (4 fallbacks in one game, all in round 1). Fix: send 6 warm-up requests before the games. After that, 0 fallbacks in every full run.
+- Two Kev servers (one per T4) with different levels played in parallel and cut the evaluation time (4B zero-shot: 2.4 hours instead of about 5).
+
+**Kev-4B training on a T4**
+- With the README command (`--dtype bf16` only) it ran out of memory while loading, because the frozen backbone was kept in fp32. Adding `--weights_dtype bf16` fixed it: 9.1 to 9.7 GB peak, 5.2 s per row on the 128 longest rows, so one epoch would take about 8 to 11 hours (not measured on a full run). Its effect on quality is unknown. The 4B was not fine-tuned.
+- Decision (Ayan, 2026-11-24): keep Kev-4B zero-shot as a baseline in the report and fine-tune Kev-0.8B instead.
+
+**Kev-0.8B training**
+- README recipe unchanged: `--init_from jaredpalmer/kev-0.8b`, lr 2e-5, batch 1, accum 8, bf16, checkpointing on, 11.3M trainable parameters, 3.4 GB peak. About 0.82 s per row, 1.94 to 1.98 hours per epoch.
+- Data: the Run D file (8,505 rows, lookahead2 teacher, new text line) converted with `kev_convert`. Each epoch was a saved chunk (seed = chunk number), each uploaded to a private Hugging Face repo right after training. The learning-rate schedule restarts in every chunk.
+- Lessons: a session restart lost 2 hours of evaluation that had not been uploaded, so every level is now uploaded when it finishes. A leftover Kev server kept 14.9 GB on a GPU and training failed with "Device probe failed"; servers are now killed with `pkill -f kev.serve`.
+
+**Held-out results (seeds 0 to 49, 150 games per level, hero win %, lower = stronger monsters, 95% Wilson interval)**
+
+| Brain | L1 | L2 | L3 | ms per decision |
+|---|---|---|---|---|
+| Kev-4B zero-shot | 100.0 [97.5, 100.0] | 96.7 [92.4, 98.6] | 34.0 [26.9, 41.9] | 910 to 1,120 |
+| Kev-0.8B zero-shot | 100.0 [97.5, 100.0] | 88.7 [82.6, 92.8] | 58.7 [50.7, 66.2] | 160 to 190 |
+| Kev-0.8B, 2 epochs | 100.0 [97.5, 100.0] | 83.3 [76.6, 88.4] | 10.0 [6.2, 15.8] | 160 to 210 |
+| Kev-0.8B, 4 epochs | 100.0 [97.5, 100.0] | 76.7 [69.3, 82.7] | 7.3 [4.1, 12.7] | 160 to 210 |
+| scripted (same games) | 100.0 | 80.7 [73.6, 86.2] | 24.7 [18.5, 32.1] | none |
+| Laya Run D (for reference) | | 59.3 [51.3, 66.9] | 13.3 [8.8, 19.7] | about 30 |
+
+- Zero fallbacks in all Kev runs. Hugging Face repos (private): `AyanMoeen/squad-kev-zero` (4B zero-shot), `squad-kev08-zero` (0.8B zero-shot), `squad-kev08-run-k1` (chunks 1 to 4; `eval` = 2 epochs, `eval4` = 4 epochs), `squad-kev08-run-e` (the Run E experiment below).
+- Reading: training took Kev-0.8B on Level 3 from 58.7 to 10.0 (clear). It is clearly better than scripted there and not shown different from Run D. 2 vs 4 epochs overlap on both levels, so 4 epochs is not shown better than 2. On Level 2 trained Kev sits at scripted level and is clearly worse than Run D; this gap is open work (project rule). Untested ideas: more or different data, the small adapter (11.3M trainable parameters against Laya's 421M), full-weight training (`--full_ft`; fit on a T4 not checked). One run per setting, one seed set. Kev is too slow for the live game unless shown otherwise; not tested live.
+
+**In progress (2026-11-26):** Kev-0.8B, 1 epoch over the Run E data (17,007 rows, lookahead2, new text), saved in 4 parts (`part1` to `part4`) across Colab and Kaggle sessions, then evaluated. It sees the same number of rows as the 2-epoch Run D run. Learning-rate schedule restarts 4 times. Result not known yet.
