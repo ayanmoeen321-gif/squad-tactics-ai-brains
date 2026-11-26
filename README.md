@@ -2,17 +2,17 @@
 
 **Three heroes. A whole team of monsters that plan together. You get to see their plans, and then you get one turn to ruin them.**
 
-A turn-based tactics game that runs in your browser. The monsters don't just run at you one by one: each monster looks at what the monsters before it decided, and picks a move that fits the team. Before you act, you can see every plan as an arrow on the board.
+A turn-based tactics game that runs in your browser. The monsters don't just run at you one by one: each monster looks at what the monsters before it decided, and picks a move that fits the team. Before you act, the board shows what each monster plans to do and how much damage your heroes are about to take.
 
 <!-- Add screenshots later: docs/images/menu.png and docs/images/game.png -->
 
 ## 🎮 How a round works
 
-1. **The monsters plan.** Arrows show where each monster will walk and who it will hit.
+1. **The monsters plan.** Red badges show how much damage each hero is about to take, monsters that will attack get a red outline, and every monster that will move has a matching colored square where it will end up. Hover a monster to see its arrow, or press **Arrows** to see them all.
 2. **You move.** Each hero gets one move and one action. You can undo a move until the hero acts.
 3. **You press End turn.** The monsters' plans play out, and a new round starts.
 
-**You win** by killing every monster. **You lose** if all your heroes die, or if 30 rounds pass.
+**You win** by killing every monster. **You lose** if all your heroes die, or if 30 rounds pass. A result screen tells you why the game ended and lets you play again or go to the next level.
 
 ## 🛡️ Your squad
 
@@ -65,7 +65,7 @@ Mac and Linux are untested. The same steps should work, with `source .venv/bin/a
 
 ## 🧠 The monster brains
 
-The game has swappable monster "brains". The menu lets you pick **Scripted** (hand-made rules, the default) or **Random** (easy mode).
+The game has swappable monster "brains". The menu lets you pick **Scripted** (hand-made rules, the default), **Random** (easy mode) or **Laya** (the trained model, which needs its own GPU server, see below).
 
 The research side of the project trains small open "System 1" models ([Laya](https://github.com/convaiinnovations/laya)) to play the monsters. They don't write text: for each monster they pick one action from a short list of legal moves. Code does all the thinking about distances and line of sight; the model only chooses.
 
@@ -76,7 +76,9 @@ Results so far, on held-out test games against scripted hero bots (hero win rate
 | 2 | 80.7% | 59.3% | 57.3% |
 | 3 | 24.7% | 13.3% | 3.3% |
 
-These are test games with bots, not human players, and one training run each. The trained model is **not plugged into the live game yet**: on a laptop CPU it takes about 4 to 5 seconds per decision, which is too slow. On a GPU it takes about 30 ms. The Kev model comparison and a blind human playtest are still to do.
+These are test games with bots, not human players, and one training run each. The **Laya** menu option plays the monsters live through a separate Laya server: set `LAYA_URL` (and optionally `LAYA_MODEL` and `LAYA_TIMEOUT`) before `python run.py`. The trained checkpoints are not in this repo, so you need your own. On a laptop CPU Laya takes about 4 to 7 seconds per decision, too slow for the 3 second limit, so it needs a GPU server (about 30 ms on a T4). The default game needs none of this.
+
+**Kev** is a second open System 1 model we also tested, in a big version (4 billion parameters) and a small one (0.8 billion). Without any training on this game, Kev-4B scored 96.7% on Level 2 and 34.0% on Level 3, and Kev-0.8B scored 88.7% and 58.7%. After training, Kev-0.8B scored 76.7% and 7.3% (4 epochs). Kev is much slower than Laya (about 0.2 to 1 second per decision on a T4, against about 0.03), so it does not suit the live game. More Kev runs and a blind human playtest are still to do.
 
 ## 🧪 Run the tests
 
