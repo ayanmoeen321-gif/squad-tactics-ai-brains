@@ -125,7 +125,9 @@ def _laya_brain():
         raise HTTPException(400, f"Laya server not reachable at {url}. Start it, or pick another brain.")
     if model not in loaded:
         raise HTTPException(400, f"Laya server at {url} has no model named {model!r} loaded (loaded: {loaded}).")
-    return LayaBrain(RemoteAgent(url, model=model, timeout=timeout), name="laya", timeout=timeout)
+    key = os.environ.get("LAYA_API_KEY")
+    extra = {"api_key": key} if key else {}
+    return LayaBrain(RemoteAgent(url, model=model, timeout=timeout, **extra), name="laya", timeout=timeout)
 
 
 @app.post("/new")
