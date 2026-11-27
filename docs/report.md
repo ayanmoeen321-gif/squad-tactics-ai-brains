@@ -29,17 +29,24 @@ Held-out games: seeds 0 to 49, 3 hero bots, shuffled starts, 150 games per level
 | Kev-0.8B, 4 epochs | 76.7 [69.3, 82.7] | 7.3 [4.1, 12.7] |
 | Kev-0.8B, 1 epoch over 17,007 rows | 76.7 [69.3, 82.7] | 9.3 [5.6, 15.1] |
 
+![Level 2 results](images/chart_level2.png)
+
+![Level 3 results](images/chart_level3.png)
+
 **Level 4 (a new map, same monsters, never seen in training)**, Run D: 32.0 [25.1, 39.8]; lookahead2 20.0 [14.4, 27.1]; scripted 54.7 [46.7, 62.4]; always attack 55.3 [47.3, 63.1]; random 98.7 [95.3, 99.6].
+
+![Level 4 results](images/chart_level4.png)
 
 **Speed per decision:** Laya on a T4 about 30 ms; Laya on a laptop CPU 4 to 7 s; Kev-0.8B about 160 to 210 ms; Kev-4B about 0.9 to 1.2 s (all on a T4). Zero fallbacks to scripted in every model run.
 
 ## 4. What we found
 1. A text change mattered more than model changes: adding the line about which heroes can hit the monster next turn moved Level 2 from 85.3% to 59.3% (same data and settings, only the text differed).
-2. Run D is clearly better than scripted on Levels 2, 3 and 4 and within about 2 points of its teacher on Level 2. On Level 3 it is about 10 points behind the teacher; on Level 4 12 points behind (intervals overlap).
+2. Run D is clearly better than scripted on Levels 2 and 4 (intervals do not overlap) and within about 2 points of its teacher on Level 2. On Level 3 it is 11 points better than scripted, but the intervals touch (19.7 vs 18.5), so this is not shown as clear. It is about 10 points behind the teacher on Level 3 and 12 points behind on Level 4 (intervals overlap). Run D closes about 91% (Level 2), 53% (Level 3) and 65% (Level 4) of the gap between scripted and the teacher (own calculation).
 3. More data of the same kind did not help, for Laya (Run D vs Run E) or for Kev.
 4. Shadow run (Run D plays, the teacher scores the same states, Levels 3 and 4, 10,312 decisions): agreement with the teacher 79.8%. Most of the lost value is in rounds 6 to 10, where Laya attacks when the teacher prefers a positional move (advance, flank, protect, hold, heal). The training data has few examples of those choices. The scores are the teacher's own estimates, so this is a lead, not proof.
-5. Kev without training is weak on this game; fine-tuning took Kev-0.8B from 58.7% to about 10% on Level 3, but on Level 2 it stays near scripted. It is about 5 times slower than Laya, so it does not suit the live game.
-6. The scripted teacher almost never chooses Flank, so no model could learn it.
+5. Option order: when the options were shown in reverse order, Run D made the same choice 97.1% of the time (2,209 decisions, Levels 2 and 3). Win rates with reversed options were not shown to differ (30 games per level, intervals overlap; the Level 2 estimate was 16.7 points worse when reversed, so a small effect is not ruled out). Only one alternative order was tested.
+6. Kev without training is weak on this game; fine-tuning took Kev-0.8B from 58.7% to about 10% on Level 3, but on Level 2 it stays near scripted. It is about 5 times slower than Laya, so it does not suit the live game.
+7. The scripted teacher almost never chooses Flank, so no model could learn it.
 
 ## 5. Limits and what is not proven
 - Opponents are scripted hero bots, not humans. One training run per setting, one seed set. Where intervals overlap, no difference is shown.
@@ -48,10 +55,10 @@ Held-out games: seeds 0 to 49, 3 hero bots, shuffled starts, 150 games per level
 - Not tested: a new monster type, text longer than the 400-token budget, human players against the trained models.
 - Telegraphed enemy plans are not new (Into the Breach); System 1 benchmarks exist. This project does not claim to be the first.
 
-## 6. Still pending when this draft was written
-- Option-order check (does reversing the option order change the model's choice?): PENDING.
-- Kev-0.8B with learning rate 1e-4 (running): PENDING.
-- Small blind playtest: PENDING.
+## 6. Not finished at the time of writing
+- Small blind playtest (5 people, scripted vs random, rated 1 to 5): PENDING. Results will be called indicative.
+- Kev-0.8B with learning rate 1e-4 (optional extra, still running): PENDING.
+- DAgger idea (Run F): the training data is made (8,540 rows from Laya's own games, labelled by the teacher, Levels 1 to 3 only). Training is planned only if time is left. NOT RUN.
 
 ## 7. Where everything is
-README (how to play and run), `docs/spec.md` (every decision and result, sections 1 to 28), the code in the repository, tests (`pytest`).
+README (how to play and run), `docs/spec.md` (every decision and result, sections 1 to 29), the code in the repository, tests (`pytest`).
