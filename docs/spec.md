@@ -835,3 +835,28 @@ These were not decided in the interview.
 - Reading: training took Kev-0.8B on Level 3 from 58.7 to 10.0 (clear). It is clearly better than scripted there and not shown different from Run D. 2 vs 4 epochs overlap on both levels, so 4 epochs is not shown better than 2. On Level 2 trained Kev sits at scripted level and is clearly worse than Run D; this gap is open work (project rule). Untested ideas: more or different data, the small adapter (11.3M trainable parameters against Laya's 421M), full-weight training (`--full_ft`; fit on a T4 not checked). One run per setting, one seed set. Kev is too slow for the live game unless shown otherwise; not tested live.
 
 **In progress (2026-11-26):** Kev-0.8B, 1 epoch over the Run E data (17,007 rows, lookahead2, new text), saved in 4 parts (`part1` to `part4`) across Colab and Kaggle sessions, then evaluated. It sees the same number of rows as the 2-epoch Run D run. Learning-rate schedule restarts 4 times. Result not known yet.
+---
+
+## 26. Kev-0.8B Run E: double the data (2026-11-27)
+
+**What was run:** Kev-0.8B, 1 epoch over the Run E data (17,007 rows, lookahead2 teacher, new text line), converted with `kev_convert`. The epoch was split into 4 saved parts (fixed shuffle, 4,251 / 4,251 / 4,251 / 4,254 rows), each part starting from the previous one, each uploaded to the private Hugging Face repo `AyanMoeen/squad-kev08-run-e` right after training. Same recipe as the earlier Kev-0.8B runs (lr 2e-5, batch 1, accum 8, bf16, checkpointing, `--init_from jaredpalmer/kev-0.8b`). The learning-rate schedule restarts in every part (4 restarts, against 2 in the 2-epoch run). Parts 2 and 3 trained on a Colab T4 in 1.04 and 1.03 hours (about 0.87 s per row). The logs of part 1 and part 4 were not seen (part 4 was trained in another session), so their time and loss are not recorded. Evaluation: Kaggle, two T4s (one Kev server per GPU), 0.14 / 0.26 / 0.42 hours for Levels 1 / 2 / 3. Results are in the repo under `eval_1ep/`.
+
+**Held-out result (seeds 0 to 49, 150 games per level, hero win %, 95% Wilson interval; the table label is `kev_zero`, this is the trained model)**
+
+| Kev-0.8B | L1 | L2 | L3 | ms per decision |
+|---|---|---|---|---|
+| 1 epoch, 17,007 rows (Run E) | 100.0 [97.5, 100.0] | 76.7 [69.3, 82.7] | 9.3 [5.6, 15.1] | 160 to 200 |
+| 2 epochs, 8,505 rows | 100.0 | 83.3 [76.6, 88.4] | 10.0 [6.2, 15.8] | 160 to 210 |
+| 4 epochs, 8,505 rows | 100.0 | 76.7 [69.3, 82.7] | 7.3 [4.1, 12.7] | 160 to 210 |
+| scripted (same games) | 100.0 | 80.7 [73.6, 86.2] | 24.7 [18.5, 32.1] | none |
+| Laya Run D (reference) | | 59.3 [51.3, 66.9] | 13.3 [8.8, 19.7] | about 30 |
+
+- Zero fallbacks. The three trained Kev runs overlap on both levels, so none is shown better than another. Doubling the data did not help Kev, as it did not help Laya (Run D vs Run E).
+- Level 3: clearly better than scripted (intervals do not overlap), not shown different from Run D.
+- Level 2: at scripted's level and clearly worse than Run D (intervals do not overlap). The gap stayed the same across 2 epochs, 4 epochs and double the data. Cause not found; this is open work under the project rule. Hypotheses, not tested: the learning rate is too small for this task (2e-5 is the README's value for keeping the released model's skills), the small adapter (11.3M trainable parameters against Laya's 421M all trained).
+
+**Notes from `kev/train.py` (GitHub main, read 2026-11-27, not run)**
+- `--full_ft 1` trains the whole backbone (bf16 weights, fp32 masters in `MasterAdamW`, gradient clip 1.0); needs `--weights_dtype bf16`; on one GPU the masters and moments live in host memory; several GPUs only through torchrun + FSDP2. Its checkpoint has `lora=0`, `weights="full"`, so a warm start from the released adapter checkpoint is probably refused (not tested). Fit on a T4 and speed: not tested. The README's 27B full fine-tune used lr 2e-6.
+- `--lr` default is 2e-4 (README: 1e-4 for the first stage of Kev-0.8B, 2e-5 as a small rate for `--init_from` fine-tunes).
+
+**Next (planned, not run):** (A) the 2-epoch run on the Run D data with only the learning rate changed to 1e-4, new repo `squad-kev08-run-k2`, compared with the 2-epoch run above; (B) a short full-weight feasibility test on a T4 (memory, speed, whether `--init_from` is accepted).
