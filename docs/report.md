@@ -52,11 +52,11 @@ Held-out games: seeds 0 to 49, 3 hero bots, shuffled starts, 150 games per level
 - Opponents are scripted hero bots, not humans. One training run per setting, one seed set. Where intervals overlap, no difference is shown.
 - Level 3 is very hard against the strongest brains (teacher: 3.3% hero wins). It is beatable by a human against the default scripted brain (the author won one of two games, in round 21, using a doorway the monsters held). Balancing was not done.
 - Laya plays live only through a GPU server (about 4 to 7 s per decision on a laptop CPU). The default game uses the scripted brain.
-- Not tested: a new monster type, text longer than the 400-token budget, human players against the trained models.
+- Not tested: a new monster type, text longer than the 400-token budget, human players against the trained models. No playtest with other people was done; the only human evidence is the author's two games on Level 3.
 - Telegraphed enemy plans are not new (Into the Breach); System 1 benchmarks exist. This project does not claim to be the first.
 
 ## 6. Not finished at the time of writing
-- Small blind playtest (5 people, scripted vs random, rated 1 to 5): PENDING. Results will be called indicative.
+- Small blind playtest with other people: dropped because of the deadline. Not done.
 - Kev-0.8B with learning rate 1e-4 (optional extra, still running): PENDING.
 - DAgger idea (Run F): the training data is made (8,540 rows from Laya's own games, labelled by the teacher, Levels 1 to 3 only). Training is planned only if time is left. NOT RUN.
 

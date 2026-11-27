@@ -914,3 +914,11 @@ These were not decided in the interview.
 **DAgger data (Run F):** `eval/make_dagger_data.py`: Run D plays (the game follows Run D), the lookahead2 teacher labels every decision with 2+ options on the same state, seeds 2000 and up, Levels 1 to 3 only (Level 4 stays unseen), 3 hero bots, shuffled starts; resumes from a `.games` file. Result: 8,540 rows from 286 games (rows by level 1,534 / 2,879 / 4,127), 0 fallbacks, Laya agreed with the teacher on 81.6%, all rows have the new text line, at least 2 options, and a label that is an option. Saved in private HF repo `AyanMoeen/squad-laya-run-f` (`data/laya_f_new.jsonl`, `.games`).
 
 **Run F plan (not run):** the 8,505 Run D rows plus these 8,540 rows (17,045 in total, the size of Run E), same recipe as Runs D and E, 4 chunks of 1 epoch from the original `typed-decisions` checkpoint. Pass line, fixed before the run (held-out seeds 0 to 49, 150 games per level): (1) Level 3 hero win rate 7.0% or lower (5 points better than Run E's 12.0); (2) Level 2 64.3% or lower (no more than 5 points worse than Run E's 59.3); (3) Level 4 37.0% or lower (no more than 5 points worse than Run D's 32.0). Compared with Run E (same size, different data distribution) and Run D. Overlapping intervals are reported as not proven. Decision (2026-11-27): Run F training happens at the very end, only if all required work is done and time is left.
+
+## 30. Submission decisions (2026-11-27)
+
+- **Playtest dropped** (decision 2026-11-27): no way to give 5 people the game links in time. The report says it was not done; the only human evidence is the author's 2 games on Level 3.
+- **`web/dist` is committed** (`git add -f`), so a fresh clone runs the game without Node. Rebuild and commit it again after any change in `web/`.
+- **Clean-clone test passed** (clone, venv, `pip install -r requirements.txt`, `pytest -q`, `python run.py`, game loads and plays).
+- **Demo:** a teammate with a 16 GB laptop clones the repository and screen-records the game (scripted brain, tutorial, Level 2). Laya results are shown through the report charts. Not tested: Laya playing live in the video.
+- Report is submitted as PDF (`docs/report.pdf`, built from `docs/report.md` with a local script outside the repository). Deadline 2026-11-30.
