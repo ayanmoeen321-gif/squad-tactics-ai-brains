@@ -98,7 +98,7 @@ def report(results, log_dir=None):
     model = next((n for n in ("laya_a", "laya_b") if n in names), None)
     if model:
         print("\nModel minus baseline, in percentage points of hero win rate "
-              "(negative = Laya-A is better for the monsters):")
+              "(negative = the model is better for the monsters):")
         for level in sorted({lv for _, lv in results}) + [None]:
             w, n = rate(results, model, level)
             if n == 0:
