@@ -860,3 +860,28 @@ These were not decided in the interview.
 - `--lr` default is 2e-4 (README: 1e-4 for the first stage of Kev-0.8B, 2e-5 as a small rate for `--init_from` fine-tunes).
 
 **Next (planned, not run):** (A) the 2-epoch run on the Run D data with only the learning rate changed to 1e-4, new repo `squad-kev08-run-k2`, compared with the 2-epoch run above; (B) a short full-weight feasibility test on a T4 (memory, speed, whether `--init_from` is accepted).
+---
+
+## 27. Level 4: a new map with the same monsters (2026-11-27)
+
+**Design:** `data/levels/level4.txt`, 8 monsters (3 goblins, 2 brutes, 2 archers, 1 healer, the Level 2 mix), the same tiles and stats as Levels 1 to 3, no new rule or monster type. Heroes start at the bottom, monsters at the top, a horizontal wall with two doorways at (5,3) and (5,8), cover tiles and one lava patch. It tests a new map only: nothing else is new, so a bad result could not be blamed on a new monster or longer text. The map was chosen to be in the middle of the difficulty range, not as hard as Level 3. Models were trained on Levels 1 to 3 only. Tests: `tests/test_level4.py` (326 passed in total).
+
+**Checks before the model run (dev seeds 340 to 349, 30 games per brain):** hero win rate scripted 53.3 [36.1, 69.8], always_attack 53.3, random 100.0. Longest view 289 rough tokens (scripted, heroes standing still, 8 rounds).
+
+**Pass line (fixed before the run):** Run D on seeds 0 to 49 (150 games) must (1) be clearly better than scripted (intervals do not overlap) and (2) be at most 10 points behind lookahead2.
+
+**Result (seeds 0 to 49, 150 games, hero win %, 95% Wilson interval; the table label `laya_b` is Run D):**
+
+| Brain | L4 |
+|---|---|
+| Laya Run D | 32.0 [25.1, 39.8] |
+| lookahead2 | 20.0 [14.4, 27.1] |
+| scripted | 54.7 [46.7, 62.4] |
+| always_attack | 55.3 [47.3, 63.1] |
+| random | 98.7 [95.3, 99.6] |
+
+- Zero fallbacks for every brain. Laya on a Kaggle T4: about 31 ms per decision, 6,562 model calls, longest real input 354 tokens, none over 400. Logs: private Hugging Face repo `AyanMoeen/squad-laya-level4`.
+- Line (1): met (22.7 points better than scripted, intervals do not overlap). Line (2): missed by 2 points (12.0 behind the teacher); the intervals overlap, so the difference is not statistically shown.
+- Share of the scripted-to-teacher gap that Run D closes: about 91% on Level 2, 53% on Level 3, 65% on Level 4 (own calculation).
+- Reading: the model generalizes to a new map with the same monsters and still beats scripted clearly; the gap to the teacher is larger on the hard levels (3 and 4), the same open issue as the Level 3 gap. One run, one seed set, bots only, no humans. A new monster type or a longer text was not tested.
+- Next: diagnose where Run D and the teacher differ on Levels 3 and 4 (a shadow run: Run D plays, the teacher chooses on the same states, both choices are logged).
