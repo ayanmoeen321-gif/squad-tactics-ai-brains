@@ -1,0 +1,57 @@
+# Squad Tactics vs. a Team of Fast AI Brains: project report (DRAFT, 2026-11-27)
+
+## 1. What this is
+A turn-based tactics game in the browser. The player controls 3 heroes (Tank, Archer, Healer). Up to 10 monsters fight as a team: they plan one by one, each seeing the earlier plans, and the plans are shown before they play out. Code does all the thinking (distances, line of sight, legal moves, damage, tile choice). A small open "System 1" model only picks one option from a short legal list for each monster. The goal was a playable, fun game plus a fair comparison of monster brains.
+
+## 2. Brains compared
+- **random**, **always attack**, **scripted** (hand-made rules, frozen), **lookahead2** (a code teacher that simulates the rest of the round for every option).
+- **Laya** (421M encoder, all weights fine-tuned): Laya-A copies scripted; Laya-B, Run C, D and E copy lookahead2. Run D is the best candidate (it adds one line to the text: "Heroes that can hit you here next turn").
+- **Kev** (Qwen3.5 base + small adapter): 4B and 0.8B without training, and 0.8B fine-tuned (2 epochs, 4 epochs, and one epoch over double the data). Kev-4B was not fine-tuned: it does not fit training on a free T4 without a precision change.
+- Jev (hosted, paid) was cut for cost.
+
+## 3. Results
+Held-out games: seeds 0 to 49, 3 hero bots, shuffled starts, 150 games per level. Hero win % (lower = stronger monsters), 95% Wilson interval. Level 1 separates no brain (everyone 100%).
+
+| Brain | Level 2 | Level 3 |
+|---|---|---|
+| random | 99.3 | 95.3 |
+| always attack | 84.7 [78.0, 89.6] | 33.3 [26.3, 41.2] |
+| scripted | 80.7 [73.6, 86.2] | 24.7 [18.5, 32.1] |
+| lookahead2 (teacher) | 57.3 | 3.3 |
+| Laya-A | 81.3 [74.3, 86.8] | 25.3 [19.0, 32.8] |
+| Laya-B (old text) | 85.3 [78.8, 90.1] | 12.7 [8.3, 18.9] |
+| Laya run C (old text, soft loss) | 85.3 [78.8, 90.1] | 8.7 [5.1, 14.3] |
+| **Laya Run D** | **59.3 [51.3, 66.9]** | **13.3 [8.8, 19.7]** |
+| Laya Run E (double data) | 59.3 [51.3, 66.9] | 12.0 [7.7, 18.2] |
+| Kev-4B, no training | 96.7 [92.4, 98.6] | 34.0 [26.9, 41.9] |
+| Kev-0.8B, no training | 88.7 [82.6, 92.8] | 58.7 [50.7, 66.2] |
+| Kev-0.8B, 2 epochs | 83.3 [76.6, 88.4] | 10.0 [6.2, 15.8] |
+| Kev-0.8B, 4 epochs | 76.7 [69.3, 82.7] | 7.3 [4.1, 12.7] |
+| Kev-0.8B, 1 epoch over 17,007 rows | 76.7 [69.3, 82.7] | 9.3 [5.6, 15.1] |
+
+**Level 4 (a new map, same monsters, never seen in training)**, Run D: 32.0 [25.1, 39.8]; lookahead2 20.0 [14.4, 27.1]; scripted 54.7 [46.7, 62.4]; always attack 55.3 [47.3, 63.1]; random 98.7 [95.3, 99.6].
+
+**Speed per decision:** Laya on a T4 about 30 ms; Laya on a laptop CPU 4 to 7 s; Kev-0.8B about 160 to 210 ms; Kev-4B about 0.9 to 1.2 s (all on a T4). Zero fallbacks to scripted in every model run.
+
+## 4. What we found
+1. A text change mattered more than model changes: adding the line about which heroes can hit the monster next turn moved Level 2 from 85.3% to 59.3% (same data and settings, only the text differed).
+2. Run D is clearly better than scripted on Levels 2, 3 and 4 and within about 2 points of its teacher on Level 2. On Level 3 it is about 10 points behind the teacher; on Level 4 12 points behind (intervals overlap).
+3. More data of the same kind did not help, for Laya (Run D vs Run E) or for Kev.
+4. Shadow run (Run D plays, the teacher scores the same states, Levels 3 and 4, 10,312 decisions): agreement with the teacher 79.8%. Most of the lost value is in rounds 6 to 10, where Laya attacks when the teacher prefers a positional move (advance, flank, protect, hold, heal). The training data has few examples of those choices. The scores are the teacher's own estimates, so this is a lead, not proof.
+5. Kev without training is weak on this game; fine-tuning took Kev-0.8B from 58.7% to about 10% on Level 3, but on Level 2 it stays near scripted. It is about 5 times slower than Laya, so it does not suit the live game.
+6. The scripted teacher almost never chooses Flank, so no model could learn it.
+
+## 5. Limits and what is not proven
+- Opponents are scripted hero bots, not humans. One training run per setting, one seed set. Where intervals overlap, no difference is shown.
+- Level 3 is very hard against the strongest brains (teacher: 3.3% hero wins). It is beatable by a human against the default scripted brain (the author won one of two games, in round 21, using a doorway the monsters held). Balancing was not done.
+- Laya plays live only through a GPU server (about 4 to 7 s per decision on a laptop CPU). The default game uses the scripted brain.
+- Not tested: a new monster type, text longer than the 400-token budget, human players against the trained models.
+- Telegraphed enemy plans are not new (Into the Breach); System 1 benchmarks exist. This project does not claim to be the first.
+
+## 6. Still pending when this draft was written
+- Option-order check (does reversing the option order change the model's choice?): PENDING.
+- Kev-0.8B with learning rate 1e-4 (running): PENDING.
+- Small blind playtest: PENDING.
+
+## 7. Where everything is
+README (how to play and run), `docs/spec.md` (every decision and result, sections 1 to 28), the code in the repository, tests (`pytest`).
