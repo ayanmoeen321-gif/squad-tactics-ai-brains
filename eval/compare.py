@@ -35,6 +35,10 @@ def make_brain(name, seed, laya_agent=None):
     if name == "kev_zero":
         from brains.laya_brain import LayaBrain
         return LayaBrain(laya_agent, name="kev_zero", version="remote")
+    if name == "laya_rev":
+        from brains.laya_brain import LayaBrain
+        from eval.option_order import ReversedBrain
+        return ReversedBrain(LayaBrain(laya_agent, name="laya_rev", version="reversed"))
     raise ValueError(name)
 
 
