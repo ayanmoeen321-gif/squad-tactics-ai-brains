@@ -885,3 +885,24 @@ These were not decided in the interview.
 - Share of the scripted-to-teacher gap that Run D closes: about 91% on Level 2, 53% on Level 3, 65% on Level 4 (own calculation).
 - Reading: the model generalizes to a new map with the same monsters and still beats scripted clearly; the gap to the teacher is larger on the hard levels (3 and 4), the same open issue as the Level 3 gap. One run, one seed set, bots only, no humans. A new monster type or a longer text was not tested.
 - Next: diagnose where Run D and the teacher differ on Levels 3 and 4 (a shadow run: Run D plays, the teacher chooses on the same states, both choices are logged).
+---
+
+## 28. Shadow run: where Laya Run D differs from the lookahead2 teacher (2026-11-27)
+
+**What was built:** `brains/shadow_brain.py` (`ShadowBrain`): the student (Laya Run D) plays; at every decision with 2 or more options the teacher (`Lookahead2Brain`, its own `_try` method, nothing copied) also scores every option on the same state, and the decision is logged with the student's pick, the teacher's pick, all teacher scores and the regret (the teacher's best score minus its score for the student's pick; a game win or loss counts 1000). The game follows the student. `eval/shadow.py` plays the games (dev seeds only, 340 and up; it can resume), `eval/shadow_report.py` summarizes. Tests: a check that the teacher choice equals a real `Lookahead2Brain` choice on real states, regret never negative and zero for the teacher against itself, and the report numbers. 330 tests pass.
+
+**Run:** Run D on a Kaggle T4, Levels 3 and 4, dev seeds 350 to 389, 3 hero bots (120 games per level), 625 s and 479 s. Logs in the private Hugging Face repo `AyanMoeen/squad-laya-shadow`.
+
+**Result (10,312 decisions with 2 or more options; the scores are the teacher's own estimates from simulations with scripted monsters and 3 hero bots, not the truth)**
+- Agreement with the teacher 79.8%, mean regret 8.565, decisive mistakes (regret of 300 or more, my threshold) 148. Level 3: 5,242 decisions, 79.2% agreement, mean regret 10.753, 105 decisive. Level 4: 5,070 decisions, 80.4%, 6.303, 43 decisive.
+- By monster: goblin 85.8% agreement, brute 80.1%, archer 77.8%, healer 71.0% (mean regret 13.551, the highest).
+- By round: rounds 1 to 5 agreement 81.6%, mean regret 2.325 (7,822 decisions); rounds 6 to 10 agreement 74.0%, mean regret 27.683 (2,399 decisions, 23% of all) and 116 of the 148 decisive mistakes (78%); round 11 and later 91 decisions, 6 decisive. Higher stakes in the mid-game inflate regret by themselves; the drop in agreement is separate from that.
+- Disagreements, Laya option to teacher option, by total regret: attack to advance 265 times (21,669), attack to flank 205 (18,767), attack to protect 207 (13,019), advance to heal 77 (7,515), attack to a different attack 675 (6,484), advance to hold 63 (5,190), attack to retreat 37 (4,110). Laya picking attack where the teacher picks something else is at least 68% of all regret (own calculation from the listed pairs); a wrong target inside attack is cheap (9.6 per decision).
+
+**Check of the Run D training data (`logs/laya_c_train.jsonl`, 8,505 rows)**
+- Rows by round: 1 to 5 81.3% (6,911), 6 to 10 17.3% (1,472), 11 and later 1.4% (122). In Laya's own shadow games: 75.9%, 23.3%, 0.9% (not like for like: training includes the short Level 1 games; the shadow run had Levels 3 and 4 only).
+- Teacher labels: attack 58.5%, advance 28.8%, protect 4.7%, heal 3.6%, hold 2.3%, flank 1.7%, retreat 0.4%. Rounds 6 to 10: attack 65.6%, advance 18.3%, heal 7.5%, protect 3.7%, hold 2.0%, retreat 1.6%, flank 1.3% (about 19 flank rows). Run E (double the teacher's own games) did not help Level 3, so more data of the same kind is not the fix.
+
+**Reading and hypothesis (not proven):** Laya's mistakes sit in the mid-game and lean toward the most common label (attack) where the teacher wants a positional move (advance, flank, protect, hold, heal). The training data has few examples of those choices, and it comes from the teacher's own positions, not from the positions Laya reaches. Untested idea: add rows from Laya's own positions labelled by the teacher (DAgger), Levels 1 to 3 only so that Level 4 stays an unseen-map test. One model, one set of dev seeds, bots only.
+
+**Planned, not run (Run F):** Laya Run D plays Levels 1 to 3 on fresh training seeds (2000 and up), the teacher labels every decision, those rows are added to the 8,505 Run D rows (about 17,000 in total, the same size as Run E), trained from the original checkpoint with the same recipe. Compared with Run E (same size, different distribution) and Run D. The pass line is fixed before the run.
