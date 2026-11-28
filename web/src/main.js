@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import './style.css'
+import { SPRITE, SWORD, ROLE, sprite, unitIcon, openHowTo } from './howto.js'
 
 const CELL = 48
 const FLOOR = { '.': 0x1f2533, '#': 0x4b556d, 'C': 0x2f6a4c, 'L': 0xc4552b }
@@ -7,8 +8,6 @@ const FLOOR_B = 0x232a3a
 const HERO = 0x4aa3df
 const MON = 0xe4604f
 const GOLD = 0xf2c14e
-// frame numbers in tilemap_packed.png (Kenney Tiny Dungeon, CC0), 12 sprites per row
-const SPRITE = { 'hero:T': 97, 'hero:A': 112, 'hero:H': 99, 'monster:G': 110, 'monster:A': 111, 'monster:H': 108, 'monster:B': 109 }
 const FONT = 'Segoe UI, system-ui, -apple-system, Arial, sans-serif'
 const level = Number(new URLSearchParams(location.search).get('level') || 1)
 const seed = Number(new URLSearchParams(location.search).get('seed') || 0)
@@ -98,26 +97,74 @@ const logLines = []
 const logDiv = document.createElement('div')
 logDiv.className = 'panel log'
 
+function who(id) {
+  const u = S.units.find((v) => v.id === id)
+  const side = (id === 'tank' || id === 'archer' || id === 'healer') ? 'hero' : 'monster'
+  return { label: u ? u.label : String(id), side }
+}
+
 function logEvents(events, path, round) {
-  const R = 'R' + round + ' '
-  const side = (id) => id === 'tank' || id === 'archer' || id === 'healer' ? '[HERO] ' : '[MONSTER] '
-  const n = (id) => { const u = S.units.find((v) => v.id === id); return u ? u.label : id }
-  if (path === '/end_turn') logLines.push(R + '--- Monsters act ---')
+  if (path === '/end_turn') logLines.push({ k: 'ribbon', r: round })
   events.forEach((e) => {
-    const tag = e.taunted ? ' (taunted)' : ''
     if (e.type === 'attack' || e.type === 'piercing_shot') {
-      const what = e.type === 'attack' ? 'hit' : 'pierced'
-      logLines.push(R + side(e.attacker) + n(e.attacker) + ' ' + what + ' ' + n(e.target) + ' for ' + e.damage + (e.killed ? ' - dead' : '') + tag)
+      logLines.push({ k: 'hit', r: round, a: who(e.attacker), t: who(e.target), dmg: e.damage, kill: !!e.killed, pierce: e.type === 'piercing_shot', taunted: !!e.taunted })
     } else if (e.type === 'heal') {
-      logLines.push(R + side(e.healer) + n(e.healer) + ' healed ' + n(e.target) + ' +' + e.restored)
+      logLines.push({ k: 'heal', r: round, a: who(e.healer), t: who(e.target), amt: e.restored })
     } else if (e.type === 'lava') {
-      logLines.push(R + n(e.target) + ' burned by lava for ' + e.damage + (e.killed ? ' - dead' : ''))
+      logLines.push({ k: 'lava', r: round, t: who(e.target), dmg: e.damage, kill: !!e.killed })
     } else if (e.type === 'taunt') {
-      logLines.push(R + side(e.unit) + n(e.unit) + ' used Taunt on ' + (e.affected ? e.affected.length : 0) + ' monster(s)')
+      logLines.push({ k: 'taunt', r: round, a: who(e.unit), n: e.affected ? e.affected.length : 0 })
+    } else if (e.type !== 'move') {
+      logLines.push({ k: 'plain', r: round, text: String(e.type) })
     }
   })
-  if (logLines.length > 40) logLines.splice(0, logLines.length - 40)
-  logDiv.innerHTML = '<b>Log (newest first):</b><br>' + logLines.slice(-14).reverse().join('<br>')
+  if (logLines.length > 150) logLines.splice(0, logLines.length - 150)
+  renderLog()
+}
+
+function nameHtml(w) { return '<span class="nm ' + w.side + '">' + w.label + '</span>' }
+
+function rowHtml(e, fresh) {
+  const f = fresh ? ' fresh' : ''
+  if (e.k === 'ribbon') return '<div class="ribbon' + f + '">Monsters strike</div>'
+  let h = '<div class="lrow' + f + '">'
+  if (e.k === 'hit') {
+    h += unitIcon(e.a.side, e.a.label) + nameHtml(e.a) + '<span class="sword">' + sprite(SWORD, 1.5) + '</span>' + unitIcon(e.t.side, e.t.label) + nameHtml(e.t) +
+      '<span class="dmg">-' + e.dmg + '</span>'
+    if (e.pierce) h += '<span class="tag">pierce</span>'
+    if (e.taunted) h += '<span class="tag">taunted</span>'
+    if (e.kill) h += '<span class="tag kill">defeated</span>'
+  } else if (e.k === 'heal') {
+    h += unitIcon(e.a.side, e.a.label) + nameHtml(e.a) + '<span class="sword">' + sprite(113, 1.5) + '</span>' + unitIcon(e.t.side, e.t.label) + nameHtml(e.t) +
+      '<span class="heal">+' + e.amt + '</span>'
+  } else if (e.k === 'lava') {
+    h += unitIcon(e.t.side, e.t.label) + nameHtml(e.t) + '<span class="tag lava">lava</span><span class="dmg">-' + e.dmg + '</span>'
+    if (e.kill) h += '<span class="tag kill">defeated</span>'
+  } else if (e.k === 'taunt') {
+    h += unitIcon(e.a.side, e.a.label) + nameHtml(e.a) + '<span class="tag">Taunt</span><span class="plain">' + e.n + ' monster(s)</span>'
+  } else {
+    h += '<span class="plain">' + e.text + '</span>'
+  }
+  return h + '</div>'
+}
+
+function renderLog() {
+  const groups = []
+  logLines.forEach((e, i) => {
+    let g = groups[groups.length - 1]
+    if (!g || g.r !== e.r) { g = { r: e.r, items: [] }; groups.push(g) }
+    g.items.push([e, i])
+  })
+  const shown = groups.slice(-3).reverse()
+  const folded = groups.length - shown.length
+  const lastIdx = logLines.length - 1
+  let h = '<div class="log-head">Battle log</div>'
+  shown.forEach((g, gi) => {
+    h += '<div class="lgroup old' + gi + '"><div class="round">Round ' + g.r + '</div>' +
+      g.items.map(([e, i]) => rowHtml(e, i === lastIdx)).join('') + '</div>'
+  })
+  if (folded > 0) h += '<div class="log-fold">+ ' + folded + ' earlier round(s)</div>'
+  logDiv.innerHTML = h
 }
 
 function button(label, fn, cls) {
@@ -138,20 +185,10 @@ button('Skill', () => {
   else if (selected === 'healer') { mode = 'heal'; msg.textContent = 'Heal: click a hurt hero' }
 })
 button('End turn', () => { selected = null; act('/end_turn') }, 'primary')
-button('Menu', () => { location.href = '/' })
-button('Restart', () => { selected = null; act('/new', { level, seed, brain }) })
-button('Arrows', () => { showArrows = !showArrows; redraw() })
-button('Help', () => {
-  if (tipsDiv.style.display === 'block') { tipsDiv.style.display = 'none'; return }
-  const tips = {
-    tank: '<b>Tank:</b> tough, hits adjacent only. Skill = Taunt: monsters within 3 steps must attack the Tank this turn. Use it when the Tank stands where you want the fight.',
-    archer: '<b>Archer:</b> hits from 4 tiles away, needs a clear line. Skill = Piercing Shot: hits every monster in a straight line. Weak (10 HP), so keep it behind the Tank.',
-    healer: '<b>Healer:</b> weak attack. Skill = Heal: +5 HP to another hero within 3 tiles. Cannot heal herself.',
-  }
-  const basics = '<b>Tips:</b> Each hero moves once, then acts once. A red number on a hero is the damage planned against it. Red-outlined monsters will attack. A faint square is where a monster will walk. Hover a monster, or press Arrows, to see its arrow. All act after End turn, so block, kill or dodge them. Green = cover (ranged hits do 1 less). Orange = lava (3 damage if you end there). Click a hero to get tips for it.'
-  window.refreshTips = () => { tipsDiv.innerHTML = (selected && tips[selected]) ? tips[selected] : basics }; window.refreshTips()
-  tipsDiv.style.display = 'block'
-})
+button('Menu', () => { location.href = '/' }, 'quiet')
+button('Restart', () => { selected = null; act('/new', { level, seed, brain }) }, 'quiet')
+button('Arrows', () => { showArrows = !showArrows; redraw() }, 'quiet')
+button('How to play', () => openHowTo(), 'gold')
 
 const card = document.createElement('div')
 card.className = 'panel card'
@@ -163,8 +200,10 @@ function onHover(x, y) {
   const hid = u && u.side === 'monster' ? u.id : null
   if (hid !== hoverId) { hoverId = hid; redraw() }
   if (!u) { card.textContent = 'Hover a unit to see its stats.'; return }
+  const role = ROLE[u.side + ':' + u.label[0]]
   const lines = ['<b>' + u.label + '</b> (' + u.side + ')',
     'HP ' + u.hp + '/' + u.max_hp + ' | Move ' + u.move + ' | Range ' + u.range + ' | Damage ' + u.damage]
+  if (role) lines.splice(1, 0, '<i>' + role + '</i>')
   if (u.skill) lines.push('Skill: ' + u.skill + (u.cooldown > 0 ? ' (ready in ' + u.cooldown + ' rounds)' : ' (ready)'))
   const p = S.plans.find((q) => q.monster === u.id)
   if (p) {
@@ -241,7 +280,6 @@ function updateTut() {
 }
 function redraw() {
   if (S && S.brain_stats) { const b = S.brain_stats; brainDiv.style.display = 'block'; brainDiv.style.color = b.fallbacks > 0 ? '#ff8080' : '#9fd'; brainDiv.textContent = 'Laya: ' + b.decisions + ' decisions, ' + b.fallbacks + ' fell back to scripted, ' + b.avg_seconds + ' s average, ' + b.worst_seconds + ' s slowest' } else { brainDiv.style.display = 'none' }
-  if (window.refreshTips) window.refreshTips()
   if (S && !S.result) { resultDiv.style.display = 'none'; resultHidden = false }
   if (!scene || !S) return
   updateTut()
@@ -429,9 +467,7 @@ boardCol.appendChild(msg)
 boardCol.appendChild(bar)
 sideCol.appendChild(brainDiv)
 sideCol.appendChild(tutDiv)
-sideCol.appendChild(tipsDiv)
 sideCol.appendChild(card)
 sideCol.appendChild(logDiv)
-sideCol.appendChild(help)
 layout.appendChild(boardCol)
 layout.appendChild(sideCol)

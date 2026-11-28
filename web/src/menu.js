@@ -1,4 +1,5 @@
 import './style.css'
+import { openHowTo } from './howto.js'
 
 const root = document.getElementById('app')
 root.className = 'menu'
@@ -47,3 +48,10 @@ levels.forEach((lv, i) => {
     location.href = '/?level=' + (i + 1) + '&brain=' + brain
   })
 })
+
+const hb = document.createElement('button')
+hb.className = 'btn gold'
+hb.textContent = 'How to play'
+hb.style.marginTop = '16px'
+hb.onclick = () => openHowTo()
+root.appendChild(hb)
