@@ -23,9 +23,11 @@ Held-out games: seeds 0 to 49, 3 hero bots, shuffled starts, 150 games per level
 | Laya run C (old text, soft loss) | 85.3 [78.8, 90.1] | 8.7 [5.1, 14.3] |
 | **Laya Run D** | **59.3 [51.3, 66.9]** | **13.3 [8.8, 19.7]** |
 | Laya Run E (double data) | 59.3 [51.3, 66.9] | 12.0 [7.7, 18.2] |
+| Laya Run F (DAgger data) | 70.0 [62.2, 76.8] | 10.0 [6.2, 15.8] |
 | Kev-4B, no training | 96.7 [92.4, 98.6] | 34.0 [26.9, 41.9] |
 | Kev-0.8B, no training | 88.7 [82.6, 92.8] | 58.7 [50.7, 66.2] |
 | Kev-0.8B, 2 epochs | 83.3 [76.6, 88.4] | 10.0 [6.2, 15.8] |
+| Kev-0.8B, 2 epochs, learning rate 1e-4 | 77.3 [70.0, 83.3] | 12.7 [8.3, 18.9] |
 | Kev-0.8B, 4 epochs | 76.7 [69.3, 82.7] | 7.3 [4.1, 12.7] |
 | Kev-0.8B, 1 epoch over 17,007 rows | 76.7 [69.3, 82.7] | 9.3 [5.6, 15.1] |
 
@@ -33,7 +35,7 @@ Held-out games: seeds 0 to 49, 3 hero bots, shuffled starts, 150 games per level
 
 ![Level 3 results](images/chart_level3.png)
 
-**Level 4 (a new map, same monsters, never seen in training)**, Run D: 32.0 [25.1, 39.8]; lookahead2 20.0 [14.4, 27.1]; scripted 54.7 [46.7, 62.4]; always attack 55.3 [47.3, 63.1]; random 98.7 [95.3, 99.6].
+**Level 4 (a new map, same monsters, never seen in training)**, Run D: 32.0 [25.1, 39.8]; Run F: 49.3 [41.4, 57.3]; lookahead2 20.0 [14.4, 27.1]; scripted 54.7 [46.7, 62.4]; always attack 55.3 [47.3, 63.1]; random 98.7 [95.3, 99.6].
 
 ![Level 4 results](images/chart_level4.png)
 
@@ -42,11 +44,12 @@ Held-out games: seeds 0 to 49, 3 hero bots, shuffled starts, 150 games per level
 ## 4. What we found
 1. A text change mattered more than model changes: adding the line about which heroes can hit the monster next turn moved Level 2 from 85.3% to 59.3% (same data and settings, only the text differed).
 2. Run D is clearly better than scripted on Levels 2 and 4 (intervals do not overlap) and within about 2 points of its teacher on Level 2. On Level 3 it is 11 points better than scripted, but the intervals touch (19.7 vs 18.5), so this is not shown as clear. It is about 10 points behind the teacher on Level 3 and 12 points behind on Level 4 (intervals overlap). Run D closes about 91% (Level 2), 53% (Level 3) and 65% (Level 4) of the gap between scripted and the teacher (own calculation).
-3. More data of the same kind did not help, for Laya (Run D vs Run E) or for Kev.
+3. More data of the same kind did not help, for Laya (Run D vs Run E) or for Kev. A higher learning rate for Kev-0.8B (1e-4) did not close the Level 2 gap either (77.3 vs 83.3, intervals overlap).
 4. Shadow run (Run D plays, the teacher scores the same states, Levels 3 and 4, 10,312 decisions): agreement with the teacher 79.8%. Most of the lost value is in rounds 6 to 10, where Laya attacks when the teacher prefers a positional move (advance, flank, protect, hold, heal). The training data has few examples of those choices. The scores are the teacher's own estimates, so this is a lead, not proof.
 5. Option order: when the options were shown in reverse order, Run D made the same choice 97.1% of the time (2,209 decisions, Levels 2 and 3). Win rates with reversed options were not shown to differ (30 games per level, intervals overlap; the Level 2 estimate was 16.7 points worse when reversed, so a small effect is not ruled out). Only one alternative order was tested.
 6. Kev without training is weak on this game; fine-tuning took Kev-0.8B from 58.7% to about 10% on Level 3, but on Level 2 it stays near scripted. It is about 5 times slower than Laya, so it does not suit the live game.
 7. The scripted teacher almost never chooses Flank, so no model could learn it.
+8. DAgger (Run F: Run D data plus 8,540 rows labelled by the teacher on Laya's own games) missed all three pass lines that were fixed before the run. Level 3: 10.0 [6.2, 15.8] (needed 7.0 or lower). Level 2: 70.0 [62.2, 76.8] (needed 64.3 or lower). Level 4: 49.3 [41.4, 57.3] (needed 37.0 or lower). Level 4, the map not in the training data, is clearly worse than Run D (intervals do not overlap); Levels 2 and 3 are not shown to differ. Run D stays the best model. One run, one seed set.
 
 ## 5. Limits and what is not proven
 - Opponents are scripted hero bots, not humans. One training run per setting, one seed set. Where intervals overlap, no difference is shown.
@@ -55,10 +58,10 @@ Held-out games: seeds 0 to 49, 3 hero bots, shuffled starts, 150 games per level
 - Not tested: a new monster type, text longer than the 400-token budget, human players against the trained models. No playtest with other people was done; the only human evidence is the author's two games on Level 3.
 - Telegraphed enemy plans are not new (Into the Breach); System 1 benchmarks exist. This project does not claim to be the first.
 
-## 6. Not finished at the time of writing
+## 6. Not done
 - Small blind playtest with other people: dropped because of the deadline. Not done.
-- Kev-0.8B with learning rate 1e-4 (optional extra, still running): PENDING.
-- DAgger idea (Run F): the training data is made (8,540 rows from Laya's own games, labelled by the teacher, Levels 1 to 3 only). Training is planned only if time is left. NOT RUN.
+- Option-order check with 150 games per level (the first one had 30): PENDING.
+- No second DAgger round: Run F did not reach its pass line, so no further training was done.
 
 ## 7. Where everything is
 README (how to play and run), `docs/spec.md` (every decision and result, sections 1 to 29), the code in the repository, tests (`pytest`).

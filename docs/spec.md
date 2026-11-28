@@ -922,3 +922,17 @@ These were not decided in the interview.
 - **Clean-clone test passed** (clone, venv, `pip install -r requirements.txt`, `pytest -q`, `python run.py`, game loads and plays).
 - **Demo:** a teammate with a 16 GB laptop clones the repository and screen-records the game (scripted brain, tutorial, Level 2). Laya results are shown through the report charts. Not tested: Laya playing live in the video.
 - Report is submitted as PDF (`docs/report.pdf`, built from `docs/report.md` with a local script outside the repository). Deadline 2026-11-30.
+
+## 31. Results: Kev-0.8B learning rate 1e-4, Run F (2026-11-28)
+
+**Kev-0.8B, learning rate 1e-4:** 2 epochs (2 chunks of 1 epoch) over the 8,505 Run D rows, same recipe as before except the learning rate. Held-out seeds 0 to 49, 150 games per level: Level 1 100.0 [97.5, 100.0]; Level 2 77.3 [70.0, 83.3]; Level 3 12.7 [8.3, 18.9]; 0 fallbacks; 170 to 218 ms per decision. The earlier 2-epoch run: Level 2 83.3 [76.6, 88.4], Level 3 10.0 [6.2, 15.8]. Intervals overlap: no difference shown. The idea "the learning rate was too small" was tested and not supported. Results are in a private Hugging Face repo.
+
+**Run F (DAgger), result against the pass line fixed in section 29:** 4 chunks of 1 epoch over 17,045 rows (8,505 Run D rows plus 8,540 DAgger rows, shuffled with seed 0), about 0.55 h per chunk on a Colab GPU, mean loss per chunk 0.584, 0.521, 0.472, 0.436. Held-out seeds 0 to 49, 150 games per level:
+
+| Level | Run F | Pass line | Result | Run D |
+|---|---|---|---|---|
+| 2 | 70.0 [62.2, 76.8] | 64.3 or lower | MISSED | 59.3 [51.3, 66.9] |
+| 3 | 10.0 [6.2, 15.8] | 7.0 or lower | MISSED | 13.3 [8.8, 19.7] |
+| 4 | 49.3 [41.4, 57.3] | 37.0 or lower | MISSED | 32.0 [25.1, 39.8] |
+
+Against Run D: Level 2 overlaps (no difference shown; the estimate is 10.7 points worse); Level 3 overlaps (3.3 points better, not shown); Level 4 does not overlap: clearly worse, by 17.3 points, and close to scripted (54.7). Conclusion: the DAgger data in this form did not help; Run D stays the best model. Possible reasons, not tested: the new data has Levels 1 to 3 only, two data distributions are mixed, one run and one seed set. Decision: no second DAgger round and no more Laya training. Files: private repo `AyanMoeen/squad-laya-run-f-model` (`chunk1` to `chunk4`, `eval/`).
