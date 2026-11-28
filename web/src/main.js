@@ -2,7 +2,12 @@ import Phaser from 'phaser'
 import './style.css'
 
 const CELL = 48
-const FLOOR = { '.': 0x2b2f3a, '#': 0x777777, 'C': 0x3d6b3d, 'L': 0xb5481f }
+const FLOOR = { '.': 0x1f2533, '#': 0x4b556d, 'C': 0x2f6a4c, 'L': 0xc4552b }
+const FLOOR_B = 0x232a3a
+const HERO = 0x4aa3df
+const MON = 0xe4604f
+const GOLD = 0xf2c14e
+const FONT = 'Segoe UI, system-ui, -apple-system, Arial, sans-serif'
 const level = Number(new URLSearchParams(location.search).get('level') || 1)
 const seed = Number(new URLSearchParams(location.search).get('seed') || 0)
 const brain = new URLSearchParams(location.search).get('brain') || 'scripted'
@@ -13,9 +18,9 @@ let mode = null
 let scene = null
 
 const msg = document.createElement('div')
-msg.style.cssText = 'color:#ddd;font:16px sans-serif;padding:8px;min-height:24px'
+msg.className = 'msg'
 const bar = document.createElement('div')
-bar.style.cssText = 'padding:0 8px;display:flex;flex-wrap:wrap;gap:6px;max-width:580px'
+bar.className = 'bar'
 
 async function api(path, body) {
   const r = await fetch('/api' + path, {
@@ -41,7 +46,8 @@ async function act(path, body) {
 }
 
 const brainDiv = document.createElement('div')
-brainDiv.style.cssText = 'font:13px sans-serif;padding:4px 8px;display:none'
+brainDiv.className = 'brain'
+brainDiv.style.display = 'none'
 let hoverId = null
 let showArrows = false
 let resultHidden = false
@@ -63,15 +69,16 @@ function showResult() {
   const left = S.units.filter((u) => u.side === 'monster' && u.alive)
   const why = win ? 'All monsters are dead.' : (alive.length === 0 ? 'All your heroes are dead.' : 'The 30 rounds ran out with monsters still alive.')
   const box = document.createElement('div')
-  box.style.cssText = 'color:#fff;font:16px sans-serif;padding:22px 30px;line-height:1.7;text-align:center;border-radius:8px;max-width:80%;background:' + (win ? '#1f6b2e' : '#7a1f1f')
-  box.innerHTML = '<div style="font:bold 32px sans-serif;margin-bottom:6px">' + (win ? 'Victory!' : 'Defeat') + '</div>' +
+  box.className = 'result-box ' + (win ? 'win' : 'lose')
+  box.innerHTML = '<div class="result-title">' + (win ? 'Victory!' : 'Defeat') + '</div>' +
     why + '<br>Ended in round ' + Math.min(S.round, 30) + '<br>Heroes alive: ' +
     (alive.map((h) => h.label + ' ' + h.hp + '/' + h.max_hp).join(', ') || 'none') +
     '<br>Monsters left: ' + left.length + '<br>'
   const mk = (label, fn) => {
     const b = document.createElement('button')
     b.textContent = label
-    b.style.cssText = 'margin:12px 6px 0 6px;padding:7px 16px;font-size:15px'
+    b.className = 'btn'
+    b.style.margin = '12px 6px 0 6px'
     b.onclick = fn
     box.appendChild(b)
   }
@@ -86,7 +93,7 @@ function showResult() {
 
 const logLines = []
 const logDiv = document.createElement('div')
-logDiv.style.cssText = 'color:#ccc;font:14px sans-serif;padding:8px;max-width:560px;line-height:1.5'
+logDiv.className = 'panel log'
 
 function logEvents(events, path, round) {
   const R = 'R' + round + ' '
@@ -110,10 +117,10 @@ function logEvents(events, path, round) {
   logDiv.innerHTML = '<b>Log (newest first):</b><br>' + logLines.slice(-14).reverse().join('<br>')
 }
 
-function button(label, fn) {
+function button(label, fn, cls) {
   const b = document.createElement('button')
   b.textContent = label
-  b.style.cssText = 'margin-right:8px;padding:6px 12px;font-size:15px'
+  b.className = 'btn' + (cls ? ' ' + cls : '')
   b.onclick = fn
   bar.appendChild(b)
 }
@@ -127,7 +134,7 @@ button('Skill', () => {
   else if (selected === 'healer' && S.heroes.healer.can_heal.length === 0) { msg.textContent = 'No hurt hero in range to heal.' }
   else if (selected === 'healer') { mode = 'heal'; msg.textContent = 'Heal: click a hurt hero' }
 })
-button('End turn', () => { selected = null; act('/end_turn') })
+button('End turn', () => { selected = null; act('/end_turn') }, 'primary')
 button('Menu', () => { location.href = '/' })
 button('Restart', () => { selected = null; act('/new', { level, seed, brain }) })
 button('Arrows', () => { showArrows = !showArrows; redraw() })
@@ -144,7 +151,7 @@ button('Help', () => {
 })
 
 const card = document.createElement('div')
-card.style.cssText = 'color:#fff;font:14px sans-serif;padding:8px;min-height:84px;line-height:1.5;border-bottom:1px solid #333;margin-bottom:8px'
+card.className = 'panel card'
 card.textContent = 'Hover a unit to see its stats.'
 
 function onHover(x, y) {
@@ -202,10 +209,12 @@ function mid(p) { return [p[1] * CELL + CELL / 2, p[0] * CELL + CELL / 2] }
 
 const tutorial = new URLSearchParams(location.search).get('tutorial') === '1'
 const tutDiv = document.createElement('div')
-tutDiv.style.cssText = 'background:#264b8f;color:#fff;font:bold 16px sans-serif;padding:12px;margin-bottom:8px;line-height:1.5;display:' + (tutorial ? 'block' : 'none')
+tutDiv.className = 'tut'
+tutDiv.style.display = tutorial ? 'block' : 'none'
 
 const tipsDiv = document.createElement('div')
-tipsDiv.style.cssText = 'background:#3a3a1a;color:#fff;font:14px sans-serif;padding:10px;margin-bottom:8px;line-height:1.5;display:none'
+tipsDiv.className = 'tips'
+tipsDiv.style.display = 'none'
 
 const tutDone = {}
 
@@ -217,7 +226,7 @@ function updateTut() {
   if (S.result === 'win') t = "You won! You know the basics. Press Next level to try Level 1."
   else if (S.result) t = "You lost, and that is fine. Press Restart and try again."
   else if (!tutDone['/move'] && !selected) t = "Step 1: click your Tank (the blue T)."
-  else if (!tutDone['/move']) t = "Step 2: white squares show where the Tank can move. Click one toward the red goblins."
+  else if (!tutDone['/move']) t = "Step 2: light-blue squares show where the Tank can move. Click one toward the red goblins."
   else if (!tutDone['/end_turn']) t = "Step 3: a red number on a hero is the damage the goblins plan to do to it. A red outline marks a goblin that will attack. Faint squares show where goblins will walk; hover a goblin or press Arrows to see its arrow. They act AFTER you press End turn. Click End turn now."
   else if (!tutDone['/attack']) t = "Step 4: the goblins came to you. Click a hero, then click a goblin with a yellow outline to attack it."
   else if (!tutDone['/taunt'] && left >= 1) t = "Step 5: Taunt. Click the Tank, press Skill. Goblins near the Tank must attack it this turn. Then click End turn or use other heroes."
@@ -234,9 +243,16 @@ function redraw() {
   if (!scene || !S) return
   updateTut()
   scene.children.removeAll(true)
+  const gt = scene.add.graphics()
   S.grid.forEach((row, r) => {
     [...row].forEach((ch, c) => {
-      scene.add.rectangle(c * CELL + CELL / 2, r * CELL + CELL / 2, CELL - 2, CELL - 2, FLOOR[ch])
+      const base = ch === '.' ? ((r + c) % 2 ? FLOOR_B : FLOOR['.']) : (FLOOR[ch] || FLOOR['.'])
+      const tx = c * CELL + 1, ty = r * CELL + 1
+      gt.fillStyle(base, 1)
+      gt.fillRoundedRect(tx, ty, CELL - 2, CELL - 2, 5)
+      if (ch === '#') { gt.fillStyle(0xffffff, 0.14); gt.fillRoundedRect(tx + 2, ty + 2, CELL - 6, 9, 4) }
+      if (ch === 'C') { gt.fillStyle(0xffffff, 0.10); gt.fillRoundedRect(tx + 9, ty + 9, CELL - 20, CELL - 20, 6) }
+      if (ch === 'L') { gt.fillStyle(0xffd27a, 0.30); gt.fillRoundedRect(tx + 8, ty + 8, CELL - 18, CELL - 18, 8) }
     })
   })
   const g = scene.add.graphics()
@@ -249,7 +265,7 @@ function redraw() {
     const b = mid(p.dest)
     const color = Phaser.Display.Color.HSVToRGB(0.1 + ((i * 0.17) % 0.75), 0.8, 1).color
     if (a[0] !== b[0] || a[1] !== b[1]) { g.fillStyle(color, 0.35); g.fillRect(p.dest[1] * CELL + 5, p.dest[0] * CELL + 5, CELL - 10, CELL - 10); g.lineStyle(3, color, 1); g.strokeRect(p.dest[1] * CELL + 5, p.dest[0] * CELL + 5, CELL - 10, CELL - 10); g.strokeRect(byId[p.monster].pos[1] * CELL + 3, byId[p.monster].pos[0] * CELL + 3, CELL - 6, CELL - 6) }
-    if (attackerIds.has(p.monster)) { const mp = byId[p.monster].pos; g.lineStyle(3, 0xff0000, 1); g.strokeRect(mp[1] * CELL + 2, mp[0] * CELL + 2, CELL - 4, CELL - 4) }
+    if (attackerIds.has(p.monster)) { const mp = byId[p.monster].pos; g.lineStyle(3, 0xff3b3b, 1); g.strokeRoundedRect(mp[1] * CELL + 2, mp[0] * CELL + 2, CELL - 4, CELL - 4, 9) }
     if (!showArrows && hoverId !== p.monster) return
     g.lineStyle(3, color, 0.7)
     if (a[0] !== b[0] || a[1] !== b[1]) {
@@ -270,29 +286,39 @@ function redraw() {
   })
   const info = selected ? S.heroes[selected] : null
   if (info) {
-    g.fillStyle(0xffffff, 0.25)
-    info.reachable.forEach((t) => g.fillRect(t[1] * CELL + 2, t[0] * CELL + 2, CELL - 4, CELL - 4))
+    g.fillStyle(0x7cc4ff, 0.34)
+    info.reachable.forEach((t) => g.fillRoundedRect(t[1] * CELL + 3, t[0] * CELL + 3, CELL - 6, CELL - 6, 6))
   }
   S.units.filter((u) => u.alive).forEach((u) => {
     const [x, y] = mid(u.pos)
     const acted = u.side === 'hero' && S.heroes[u.id] && S.heroes[u.id].acted
-    const color = u.side === 'hero' ? 0x3a7bd5 : 0xd5483a
-    scene.add.rectangle(x, y, CELL - 10, CELL - 10, color).setAlpha(acted ? 0.45 : 1)
-    scene.add.text(x, y - 4, u.label[0], { fontSize: '20px', color: '#fff' }).setOrigin(0.5)
-    scene.add.rectangle(x, y + 16, Math.max(1, (CELL - 12) * (u.hp / u.max_hp)), 4, 0x55ff55)
+    const hero = u.side === 'hero'
+    const cy = y - 2
+    const ug = scene.add.graphics()
+    ug.setAlpha(acted ? 0.45 : 1)
+    ug.fillStyle(0x000000, 0.35)
+    if (hero) ug.fillCircle(x, cy + 2, 17); else ug.fillRoundedRect(x - 17, cy - 15, 34, 34, 8)
+    ug.fillStyle(hero ? HERO : MON, 1)
+    if (hero) ug.fillCircle(x, cy, 17); else ug.fillRoundedRect(x - 17, cy - 17, 34, 34, 8)
+    const ratio = Math.max(0, Math.min(1, u.hp / u.max_hp))
+    ug.fillStyle(0x0b0e14, 0.9)
+    ug.fillRoundedRect(x - 17, cy + 20, 34, 5, 2)
+    ug.fillStyle(ratio > 0.5 ? 0x5fd38d : (ratio > 0.25 ? GOLD : 0xe4604f), 1)
+    ug.fillRoundedRect(x - 17, cy + 20, Math.max(2, 34 * ratio), 5, 2)
+    scene.add.text(x, cy, u.label[0], { fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5)
     const inc = u.side === 'hero' && S.heroes[u.id] ? S.heroes[u.id].incoming : 0
     if (inc > 0) {
       const dies = inc >= u.hp; const bx = dies ? x - 6 : x - 13; scene.add.rectangle(bx, y - 14, dies ? 32 : 18, dies ? 17 : 13, dies ? 0xff0000 : 0xaa0000).setStrokeStyle(dies ? 2 : 0, 0xffffff)
       scene.add.text(bx, y - 14, '-' + inc + (dies ? ' !' : ''), { fontSize: dies ? '13px' : '11px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5)
     }
-    scene.add.text(x + 14, y + 8, String(u.hp), { fontSize: '11px', color: '#fff', backgroundColor: '#000a' }).setOrigin(0.5)
+    scene.add.text(x + 15, y - 16, String(u.hp), { fontFamily: FONT, fontSize: '11px', fontStyle: 'bold', color: '#fff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5)
     if (info && u.side === 'monster' && info.can_attack.includes(u.id)) {
-      g.lineStyle(3, 0xffff00, 1)
-      g.strokeRect(x - CELL / 2 + 3, y - CELL / 2 + 3, CELL - 6, CELL - 6)
+      g.lineStyle(3, GOLD, 1)
+      g.strokeRoundedRect(x - CELL / 2 + 3, y - CELL / 2 + 3, CELL - 6, CELL - 6, 9)
     }
     if (u.id === selected) {
       g.lineStyle(3, 0xffffff, 1)
-      g.strokeRect(x - CELL / 2 + 3, y - CELL / 2 + 3, CELL - 6, CELL - 6)
+      g.strokeRoundedRect(x - CELL / 2 + 3, y - CELL / 2 + 3, CELL - 6, CELL - 6, 9)
     }
   })
   if (S.result) {
@@ -315,19 +341,21 @@ new Phaser.Game({
   type: Phaser.AUTO,
   width: 12 * CELL,
   height: 12 * CELL,
-  backgroundColor: '#111',
+  backgroundColor: '#12161f',
   parent: 'app',
   scene: Board,
 })
+const title = document.createElement('div')
+title.className = 'title'
+title.textContent = 'Squad Tactics'
 const goal = document.createElement('div')
-goal.style.cssText = 'color:#fff;font:bold 17px sans-serif;padding:8px'
-goal.textContent = 'Goal: kill all monsters (red) before your heroes (blue) die. You have 30 rounds.'
-document.body.insertBefore(goal, document.body.firstChild)
+goal.className = 'goal'
+goal.textContent = 'Goal: kill all monsters (red squares) before your heroes (blue circles) die. You have 30 rounds.'
 
 const help = document.createElement('div')
-help.style.cssText = 'color:#aaa;font:14px sans-serif;padding:8px;max-width:560px;line-height:1.5'
+help.className = 'help'
 help.innerHTML =
-  '<b>How to play:</b> 1) Click a hero. 2) Click a white tile to move. ' +
+  '<b>How to play:</b> 1) Click a hero. 2) Click a light-blue tile to move. ' +
   '3) Click a monster with a yellow outline to attack it (or use Skill). ' +
   '4) Press End turn.<br>' +
   '<b>Danger:</b> a red number on a hero is the damage planned against it. Red-outlined monsters will attack. ' +
@@ -336,15 +364,23 @@ help.innerHTML =
   '<b>Skills:</b> Tank = Taunt (nearby monsters attack the Tank). Archer = Piercing Shot ' +
   '(hits a whole line). Healer = Heal (+5 HP to another hero).'
 
-document.body.appendChild(msg)
-document.body.appendChild(bar)
-
-const side = document.createElement('div')
-side.style.cssText = 'position:absolute;left:600px;top:50px;width:520px'
-side.appendChild(brainDiv)
-side.appendChild(tutDiv)
-side.appendChild(tipsDiv)
-side.appendChild(card)
-side.appendChild(logDiv)
-side.appendChild(help)
-document.body.appendChild(side)
+const layout = document.createElement('div')
+layout.className = 'layout'
+const boardCol = document.createElement('div')
+boardCol.className = 'board-col'
+const sideCol = document.createElement('div')
+sideCol.className = 'side'
+document.body.insertBefore(layout, document.body.firstChild)
+boardCol.appendChild(title)
+boardCol.appendChild(goal)
+boardCol.appendChild(document.getElementById('app'))
+boardCol.appendChild(msg)
+boardCol.appendChild(bar)
+sideCol.appendChild(brainDiv)
+sideCol.appendChild(tutDiv)
+sideCol.appendChild(tipsDiv)
+sideCol.appendChild(card)
+sideCol.appendChild(logDiv)
+sideCol.appendChild(help)
+layout.appendChild(boardCol)
+layout.appendChild(sideCol)

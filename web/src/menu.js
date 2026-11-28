@@ -1,33 +1,49 @@
 import './style.css'
 
 const root = document.getElementById('app')
-root.style.cssText = 'color:#eee;font-family:sans-serif;max-width:560px;margin:40px auto;padding:0 16px;line-height:1.5'
+root.className = 'menu'
 root.innerHTML = `
-  <h1 style="margin:0 0 4px">Squad Tactics</h1>
-  <p style="color:#aaa;margin:0 0 20px">Lead 3 heroes against a team of monsters that plan together.</p>
-  <p><b>Goal:</b> kill all monsters before your heroes die. You have 30 rounds.</p>
-  <p style="margin:20px 0 6px"><b>Monster brain:</b></p>
-  <select id="brain" style="font-size:16px;padding:6px">
+  <h1>Squad Tactics</h1>
+  <p class="tagline">Lead 3 heroes against a team of monsters that plan together.</p>
+  <p class="legend"><span class="dot hero"></span>Your heroes <span class="dot monster"></span>Monsters</p>
+  <p>Kill all monsters before your heroes die. You have 30 rounds.</p>
+  <label class="label" for="brain">Monster brain</label>
+  <select id="brain" class="select">
     <option value="scripted">Scripted (hand-made rules)</option>
     <option value="random">Random (easy)</option>
     <option value="laya">Laya (needs a GPU server)</option>
   </select>
-  <p style="margin:20px 0 6px"><b>Choose a level:</b></p>
+  <p class="label">Choose a level</p>
   <div id="levels"></div>
 `
-const names = ['1 - Open room (5 monsters)', '2 - Split room (8 monsters)', '3 - Two doors (10 monsters, hard)']
-const tb = document.createElement('button')
-tb.textContent = 'Tutorial - learn the game step by step (recommended for new players)'
-tb.style.cssText = 'display:block;width:100%;margin:8px 0;padding:12px;font-size:16px;cursor:pointer;background:#cfe3ff'
-tb.onclick = () => { location.href = '/?level=0&tutorial=1&brain=scripted' }
-document.getElementById('levels').appendChild(tb)
-names.forEach((label, i) => {
+
+const levels = [
+  { title: 'Level 1: Open room', desc: '5 monsters' },
+  { title: 'Level 2: Split room', desc: '8 monsters' },
+  { title: 'Level 3: Two doors', desc: '10 monsters, hard' },
+]
+
+function levelButton(title, desc, cls, onClick) {
   const b = document.createElement('button')
-  b.textContent = 'Level ' + label
-  b.style.cssText = 'display:block;width:100%;margin:8px 0;padding:12px;font-size:16px;cursor:pointer'
-  b.onclick = () => {
+  b.className = 'level-btn' + (cls ? ' ' + cls : '')
+  const t = document.createElement('span')
+  t.className = 'level-title'
+  t.textContent = title
+  const d = document.createElement('span')
+  d.className = 'level-desc'
+  d.textContent = desc
+  b.appendChild(t)
+  b.appendChild(d)
+  b.onclick = onClick
+  document.getElementById('levels').appendChild(b)
+}
+
+levelButton('Tutorial', 'Learn the game step by step. Best for new players.', 'tutorial', () => {
+  location.href = '/?level=0&tutorial=1&brain=scripted'
+})
+levels.forEach((lv, i) => {
+  levelButton(lv.title, lv.desc, '', () => {
     const brain = document.getElementById('brain').value
     location.href = '/?level=' + (i + 1) + '&brain=' + brain
-  }
-  document.getElementById('levels').appendChild(b)
+  })
 })
