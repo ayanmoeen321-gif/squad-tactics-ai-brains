@@ -13,7 +13,18 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); }
+body {
+  color: var(--text);
+  font: 15px/1.5 var(--font);
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 40%, rgba(74, 163, 223, 0.10), transparent 70%),
+    radial-gradient(ellipse 90% 40% at 50% 108%, rgba(196, 85, 43, 0.18), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 48px),
+    var(--bg);
+  background-attachment: fixed;
+}
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%); }
 
 button, select { font-family: var(--font); }
 button:focus-visible, select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -25,7 +36,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--gold); out
 
 .title { font-size: 22px; font-weight: 700; letter-spacing: 0.2px; }
 .goal { color: var(--muted); font-size: 14px; margin: 2px 0 12px; }
-#app canvas { display: block; border-radius: 12px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45); }
+#app canvas { display: block; border-radius: 12px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 14px 44px rgba(0, 0, 0, 0.6), 0 0 80px rgba(74, 163, 223, 0.08); }
 
 .msg { min-height: 30px; padding: 10px 2px 6px; font-size: 16px; font-weight: 600; }
 .bar { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -39,7 +50,8 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--gold); out
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.55; }
 .card { min-height: 96px; }
 .log { color: #c9d1e2; }
-.help { color: var(--muted); font-size: 13px; line-height: 1.6; padding: 2px 4px; }
+.log:empty { display: none; }
+.help { color: #b3bdd1; font-size: 14px; line-height: 1.6; padding: 2px 4px; }
 .help b { color: var(--text); }
 
 .tut { background: #1b3560; border: 1px solid #2f5ea3; border-radius: 12px; padding: 12px 14px; font-size: 15px; font-weight: 600; line-height: 1.5; }
@@ -71,6 +83,3 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--gold); out
 @media (prefers-reduced-motion: reduce) {
   .btn, .level-btn { transition: none; }
 }
-
-.log:empty { display: none; }
-.help { font-size: 14px; color: #b3bdd1; }

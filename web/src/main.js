@@ -7,6 +7,8 @@ const FLOOR_B = 0x232a3a
 const HERO = 0x4aa3df
 const MON = 0xe4604f
 const GOLD = 0xf2c14e
+// frame numbers in tilemap_packed.png (Kenney Tiny Dungeon, CC0), 12 sprites per row
+const SPRITE = { 'hero:T': 97, 'hero:A': 112, 'hero:H': 99, 'monster:G': 110, 'monster:A': 111, 'monster:H': 108, 'monster:B': 109 }
 const FONT = 'Segoe UI, system-ui, -apple-system, Arial, sans-serif'
 const level = Number(new URLSearchParams(location.search).get('level') || 1)
 const seed = Number(new URLSearchParams(location.search).get('seed') || 0)
@@ -16,6 +18,7 @@ let S = null
 let selected = null
 let mode = null
 let scene = null
+let lavaG = null
 
 const msg = document.createElement('div')
 msg.className = 'msg'
@@ -244,16 +247,47 @@ function redraw() {
   updateTut()
   scene.children.removeAll(true)
   const gt = scene.add.graphics()
+  const hh = (r, c, k) => { const v = Math.sin(r * 12.9898 + c * 78.233 + k * 37.719) * 43758.5453; return v - Math.floor(v) }
+  const lavaCells = []
   S.grid.forEach((row, r) => {
     [...row].forEach((ch, c) => {
-      const base = ch === '.' ? ((r + c) % 2 ? FLOOR_B : FLOOR['.']) : (FLOOR[ch] || FLOOR['.'])
-      const tx = c * CELL + 1, ty = r * CELL + 1
-      gt.fillStyle(base, 1)
-      gt.fillRoundedRect(tx, ty, CELL - 2, CELL - 2, 5)
-      if (ch === '#') { gt.fillStyle(0xffffff, 0.14); gt.fillRoundedRect(tx + 2, ty + 2, CELL - 6, 9, 4) }
-      if (ch === 'C') { gt.fillStyle(0xffffff, 0.10); gt.fillRoundedRect(tx + 9, ty + 9, CELL - 20, CELL - 20, 6) }
-      if (ch === 'L') { gt.fillStyle(0xffd27a, 0.30); gt.fillRoundedRect(tx + 8, ty + 8, CELL - 18, CELL - 18, 8) }
+      const tx = c * CELL + 1, ty = r * CELL + 1, W = CELL - 2
+      const cx = c * CELL + CELL / 2, cy = r * CELL + CELL / 2
+      if (ch === '#') {
+        gt.fillStyle(0x2a3042, 1); gt.fillRoundedRect(tx, ty, W, W, 5)
+        gt.fillStyle(0x58627c, 1); gt.fillRoundedRect(tx, ty, W, W - 4, 5)
+        gt.fillStyle(0x3b4359, 1)
+        gt.fillRect(tx + 1, ty + 14, W - 2, 2); gt.fillRect(tx + 1, ty + 28, W - 2, 2)
+        gt.fillRect(tx + 23, ty + 2, 2, 12); gt.fillRect(tx + 12, ty + 16, 2, 12)
+        gt.fillRect(tx + 34, ty + 16, 2, 12); gt.fillRect(tx + 23, ty + 30, 2, 12)
+        gt.fillStyle(0xffffff, 0.16); gt.fillRoundedRect(tx + 2, ty + 2, W - 4, 4, 2)
+        return
+      }
+      const base = (r + c) % 2 ? FLOOR_B : FLOOR['.']
+      gt.fillStyle(ch === 'L' ? 0x7d2a10 : (ch === 'C' ? 0x24432f : base), 1)
+      gt.fillRoundedRect(tx, ty, W, W, 5)
+      if (ch === '.' && hh(r, c, 1) > 0.55) {
+        gt.fillStyle(0xffffff, 0.05)
+        gt.fillRect(tx + 6 + Math.floor(hh(r, c, 2) * 30), ty + 6 + Math.floor(hh(r, c, 3) * 30), 3, 2)
+      }
+      if (ch === 'C') {
+        gt.fillStyle(0x000000, 0.25); gt.fillEllipse(cx, cy + 12, 34, 9)
+        gt.fillStyle(0x2f7a4d, 1); gt.fillCircle(cx - 9, cy + 3, 10); gt.fillCircle(cx + 9, cy + 3, 10)
+        gt.fillStyle(0x3d9460, 1); gt.fillCircle(cx, cy - 4, 12)
+        gt.fillStyle(0xbfeccf, 0.22); gt.fillCircle(cx - 3, cy - 8, 5); gt.fillCircle(cx + 9, cy, 3)
+      }
+      if (ch === 'L') {
+        lavaCells.push([r, c])
+        gt.fillStyle(0xc4401a, 1); gt.fillRoundedRect(tx + 3, ty + 3, W - 6, W - 6, 8)
+        gt.fillStyle(0xff7a2f, 0.9); gt.fillRoundedRect(tx + 8, ty + 8, W - 16, W - 16, 8)
+      }
     })
+  })
+  lavaG = scene.add.graphics()
+  lavaCells.forEach(([r, c]) => {
+    const tx = c * CELL + 1, ty = r * CELL + 1, W = CELL - 2
+    lavaG.fillStyle(0xffd27a, 0.55); lavaG.fillRoundedRect(tx + 14, ty + 14, W - 28, W - 28, 6)
+    lavaG.fillStyle(0xfff0b0, 0.85); lavaG.fillCircle(tx + 10 + hh(r, c, 4) * 26, ty + 10 + hh(r, c, 5) * 26, 3)
   })
   const g = scene.add.graphics()
   const byId = Object.fromEntries(S.units.map((u) => [u.id, u]))
@@ -294,18 +328,28 @@ function redraw() {
     const acted = u.side === 'hero' && S.heroes[u.id] && S.heroes[u.id].acted
     const hero = u.side === 'hero'
     const cy = y - 2
+    const frame = SPRITE[u.side + ':' + u.label[0]]
+    const useSprite = frame !== undefined && scene.textures.exists('units')
     const ug = scene.add.graphics()
     ug.setAlpha(acted ? 0.45 : 1)
     ug.fillStyle(0x000000, 0.35)
     if (hero) ug.fillCircle(x, cy + 2, 17); else ug.fillRoundedRect(x - 17, cy - 15, 34, 34, 8)
-    ug.fillStyle(hero ? HERO : MON, 1)
+    ug.fillStyle(hero ? HERO : MON, useSprite ? 0.5 : 1)
     if (hero) ug.fillCircle(x, cy, 17); else ug.fillRoundedRect(x - 17, cy - 17, 34, 34, 8)
+    if (useSprite) {
+      ug.lineStyle(2, hero ? HERO : MON, 1)
+      if (hero) ug.strokeCircle(x, cy, 17); else ug.strokeRoundedRect(x - 17, cy - 17, 34, 34, 8)
+    }
     const ratio = Math.max(0, Math.min(1, u.hp / u.max_hp))
     ug.fillStyle(0x0b0e14, 0.9)
     ug.fillRoundedRect(x - 17, cy + 20, 34, 5, 2)
     ug.fillStyle(ratio > 0.5 ? 0x5fd38d : (ratio > 0.25 ? GOLD : 0xe4604f), 1)
     ug.fillRoundedRect(x - 17, cy + 20, Math.max(2, 34 * ratio), 5, 2)
-    scene.add.text(x, cy, u.label[0], { fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5)
+    if (useSprite) {
+      scene.add.image(x, cy - 1, 'units', frame).setScale(2).setAlpha(acted ? 0.5 : 1)
+    } else {
+      scene.add.text(x, cy, u.label[0], { fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5)
+    }
     const inc = u.side === 'hero' && S.heroes[u.id] ? S.heroes[u.id].incoming : 0
     if (inc > 0) {
       const dies = inc >= u.hp; const bx = dies ? x - 6 : x - 13; scene.add.rectangle(bx, y - 14, dies ? 32 : 18, dies ? 17 : 13, dies ? 0xff0000 : 0xaa0000).setStrokeStyle(dies ? 2 : 0, 0xffffff)
@@ -329,8 +373,15 @@ function redraw() {
 }
 
 class Board extends Phaser.Scene {
+  preload() {
+    this.load.spritesheet('units', '/sprites/tilemap_packed.png', { frameWidth: 16, frameHeight: 16 })
+  }
+  update(time) {
+    if (lavaG && lavaG.active) lavaG.setAlpha(0.55 + 0.45 * Math.sin(time / 420))
+  }
   async create() {
     scene = this
+    if (this.textures.exists('units')) this.textures.get('units').setFilter(Phaser.Textures.FilterMode.NEAREST)
     this.input.on('pointerdown', (p) => onClick(p.x, p.y))
     this.input.on('pointermove', (p) => onHover(p.x, p.y))
     await act('/new', { level, seed, brain })
